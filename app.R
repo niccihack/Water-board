@@ -122,7 +122,7 @@ server <- function(input, output, session) {
                  layerId = newdat()$`Official Water Body Name`) %>% #need this id so popup knows where to find the data
       clearControls() %>% #need to clear controls otherwise it keeps adding more legends on top of the old ones
       addLegend("bottomleft", 
-                colors = unique(newdat()$color),
+                colors = unique(newdat()[order(newdat()$`Typeof Sign`),]$color),
                 values = ~`Typeof Sign`,
                 labels = sort(unique(newdat()$`Typeof Sign`)),
                 opacity = 1,
