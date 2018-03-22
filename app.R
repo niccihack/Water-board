@@ -8,9 +8,11 @@
 library(shiny)
 library(leaflet)
 library(shinydashboard)
+library(DT)
 
 habdat <- hab_incident_detail
 habdat$fdate <- lubridate::date(habdat$`First Observed`)
+habdat$ldate = lubridate::date(habdat$`Bloom Last Verified`)
 habdat <- habdat %>% dplyr::mutate(color = dplyr::recode(`Typeof Sign`, 
                                            'Closed' = '#D00',
                                            'Danger' = '#F00',
@@ -44,6 +46,7 @@ habdat$`Typeof Sign` = factor(habdat$`Typeof Sign`,
 ui <- dashboardPage(
   dashboardHeader(),
   dashboardSidebar(
+    width = 350,
    sliderInput(inputId = 'date',
                label = "Date range",
                min = min(habdat$fdate),
@@ -53,8 +56,9 @@ ui <- dashboardPage(
    downloadButton('button','Download data') #adds download button
    ),#closes sidebar
   dashboardBody(
-   leafletOutput('map'),
-   tableOutput('viewData')#table output to check slider is working
+    tabsetPanel(type = 'tabs',
+                tabPanel("Map",leafletOutput('map')),
+                tabPanel('Data', DTOutput('viewData')))
   )# closes body
 )#closes ui
 
@@ -67,11 +71,20 @@ server <- function(input, output, session) {
     return(subset)# returns datatable of new values 
     }) #closes reactive
   
-  output$viewData <- renderTable({
+  output$viewData <- renderDT(
     newdat() %>% 
-      dplyr::group_by(as.character(fdate)) %>%
-      dplyr::summarise(count =  n())
-  })#create output table of data above
+      dplyr::group_by(`Official Water Body Name`) %>%
+      dplyr::summarise(County = `County Name`,
+                       'Regional waterboard' = `Regional Water Board__1`,
+                       'Water manager' = `Water Body Manager`,
+                       'Hazard level' = `Typeof Sign`,
+                       'First date observed' = as.character(fdate),
+                       'Last date observed' = as.character(ldate),
+                       'Are signs present?' = `Posted Sign Description`,
+                       "Is the incident resolved?" = `IsIncidentResolved__1`,
+                       'Details' = `Incident Information`
+                       )
+)#create output table of data above
   
   output$button <- downloadHandler( 
     filename= function(){
@@ -84,7 +97,7 @@ server <- function(input, output, session) {
   
   output$map <- renderLeaflet({
     leaflet() %>% 
-      addProviderTiles(providers$Hydda.Full) %>%
+      addProviderTiles(providers$CartoDB.Positron) %>%
       setView(lng = mean(habdat$Longitude), 
               lat = mean(habdat$Latitude), 
               zoom = 5)
