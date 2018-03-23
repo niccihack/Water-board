@@ -47,17 +47,24 @@ ui <- dashboardPage(
   dashboardHeader(),
   dashboardSidebar(
     width = 350,
-   sliderInput(inputId = 'date',
+    div(style='display: inline-block;text-align:left;margin-left: 25px',
+        sliderInput(inputId = 'date',
                label = "Date range",
                min = min(habdat$fdate),
                max = max(habdat$fdate),
                value = range(habdat$fdate)
-               ),
-   downloadButton('button','Download data') #adds download button
+               )),
+    tags$head(
+      tags$style(HTML('#button{color:black}'))
+    ),
+   div(style='display: inline-block;height: 90px;
+       line-height: 90px;
+       text-align: center;margin-left: 25px',
+       downloadButton('button','Download data')) #adds download button
    ),#closes sidebar
-  dashboardBody(
-    tabsetPanel(type = 'tabs',
-                tabPanel("Map",leafletOutput('map')),
+  dashboardBody(type = 'tabs',tags$style(type = "text/css", 
+                             "#map {height: calc(100vh - 80px) !important;}"),
+    tabsetPanel(tabPanel("Map",leafletOutput('map')),
                 tabPanel('Data', DTOutput('viewData')))
   )# closes body
 )#closes ui
@@ -100,7 +107,7 @@ server <- function(input, output, session) {
       addProviderTiles(providers$CartoDB.Positron) %>%
       setView(lng = mean(habdat$Longitude), 
               lat = mean(habdat$Latitude), 
-              zoom = 5)
+              zoom = 6)
   })
   
   #Set up content for popups 
