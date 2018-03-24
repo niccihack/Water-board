@@ -54,12 +54,14 @@ ui <- dashboardPage(
                max = max(habdat$fdate),
                value = range(habdat$fdate)
                )),
+    div(style='display: inline-block;text-align:left;margin-left: 25px',
+        selectInput(inputId = 'county',
+                label = "County",
+                choices = c('All',sort(unique(habdat$`County Name`))))),
     tags$head(
-      tags$style(HTML('#button{color:black}'))
+      tags$style(HTML('#button{color:black}'))#makes button text black
     ),
-   div(style='display: inline-block;height: 90px;
-       line-height: 90px;
-       text-align: center;margin-left: 25px',
+    div(style='display: inline-block;padding:15px;margin-left: 25px',
        downloadButton('button','Download data')) #adds download button
    ),#closes sidebar
   dashboardBody(type = 'tabs',tags$style(type = "text/css", 
@@ -70,11 +72,17 @@ ui <- dashboardPage(
 )#closes ui
 
 # Define server logic required to draw a histogram
-server <- function(input, output, session) {
+server <- function(input, output, session){
   
   newdat <- reactive({
     subset <- dplyr::filter(habdat,fdate >= input$date[1] &
-                              fdate <= input$date[2])
+                              fdate <= input$date[2])#subset by date
+    #subset by county including 'All' catagory
+    if (input$county == 'All'){
+      return(subset)
+    }else{
+      subset = dplyr::filter(subset, subset$`County Name` == input$county)
+    }
     return(subset)# returns datatable of new values 
     }) #closes reactive
   
@@ -111,7 +119,7 @@ server <- function(input, output, session) {
   })
   
   #Set up content for popups 
-  popup <- function(name, lat, lng){
+  popup <- function(name, lng, lat){
     selectedwater <- habdat[habdat$`Waterbody Name` == name,]#Tell app what record to find
     content <- as.character(tagList(
       tags$h4(as.character(selectedwater$`Official Water Body Name`)),
@@ -130,6 +138,7 @@ server <- function(input, output, session) {
     
     
   #Adds circle markers and legend for HAB signs
+  #!!!!!Markers are not mapping accurately!!!!!!
   observe({
     leafletProxy('map', data = newdat()) %>%
       clearShapes() %>%
@@ -153,7 +162,7 @@ server <- function(input, output, session) {
         return()
       }else{
         isolate({
-        popup(event$id, event$lat, event$lng)# popup shows up on marker
+        popup(event$id, event$lng, event$lat)# popup shows up on marker
       })
       }
   })
