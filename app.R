@@ -44,7 +44,10 @@ habdat$`Typeof Sign` = factor(habdat$`Typeof Sign`,
 # habdat$color = as.factor(habdat$color)
 
 ui <- dashboardPage(
-  dashboardHeader(),
+  dashboardHeader(
+    title = "CA HAB Portal",
+    titleWidth = 350
+  ),
   dashboardSidebar(
     width = 350,
     div(style='display: inline-block;text-align:left;margin-left: 25px',
@@ -112,7 +115,9 @@ server <- function(input, output, session){
   
   output$map <- renderLeaflet({
     leaflet() %>% 
-      addProviderTiles(providers$CartoDB.Positron) %>%
+      addProviderTiles(providers$CartoDB.Positron, 
+                       options = providerTileOptions(
+                         tileSize = c(255.93))) %>%
       setView(lng = mean(habdat$Longitude), 
               lat = mean(habdat$Latitude), 
               zoom = 6)
@@ -140,7 +145,7 @@ server <- function(input, output, session){
   #Adds circle markers and legend for HAB signs
   #!!!!!Markers are not mapping accurately!!!!!!
   observe({
-    leafletProxy('map', data = newdat()) %>%
+    leafletProxy('map') %>%
       clearShapes() %>%
       addCircles(data = newdat(),
                  lat = ~Latitude,
