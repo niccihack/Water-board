@@ -41,7 +41,7 @@ habdat$`Typeof Sign` = factor(habdat$`Typeof Sign`,
                                             'Advisory',
                                             'None',
                                             'Unknown'))
-# habdat$color = as.factor(habdat$color)
+habdat = dplyr::rename(habdat, lng = `Longitude (Custom SQL Query)`, lat = latitude) 
 
 ui <- dashboardPage(
   dashboardHeader(
@@ -115,11 +115,9 @@ server <- function(input, output, session){
   
   output$map <- renderLeaflet({
     leaflet() %>% 
-      addProviderTiles(providers$CartoDB.Positron, 
-                       options = providerTileOptions(
-                         tileSize = c(255.93))) %>%
-      setView(lng = mean(habdat$Longitude), 
-              lat = mean(habdat$Latitude), 
+      addProviderTiles(providers$CartoDB.Positron) %>%
+      setView(lng = mean(habdat$lng), 
+              lat = mean(habdat$lat), 
               zoom = 6)
   })
   
@@ -143,15 +141,15 @@ server <- function(input, output, session){
     
     
   #Adds circle markers and legend for HAB signs
-  #!!!!!Markers are not mapping accurately!!!!!!
   observe({
     leafletProxy('map') %>%
       clearShapes() %>%
-      addCircles(data = newdat(),
-                 lat = ~Latitude,
-                 lng = ~Longitude,
+      addCircles(data = newdat(), #Cannot use addcirclemarkers as popup info does not work
+                 lat = ~lat,
+                 lng = ~lng,
                  color= ~color,
                  opacity = 1,
+                 radius = 5,
                  popup = popup,
                  layerId = newdat()$`Official Water Body Name`) %>% #need this id so popup knows where to find the data
       clearControls() %>% #need to clear controls otherwise it keeps adding more legends on top of the old ones
