@@ -45,32 +45,57 @@ habdat = dplyr::rename(habdat, lng = `Longitude (Custom SQL Query)`, lat = latit
 
 ui <- dashboardPage(
   dashboardHeader(
-    title = "CA HAB Portal",
-    titleWidth = 350
+    title = "CA FHAB Portal"
   ),
   dashboardSidebar(
-    width = 350,
-    div(style='display: inline-block;text-align:left;margin-left: 25px',
-        sliderInput(inputId = 'date',
-               label = "Date range",
-               min = min(habdat$fdate),
-               max = max(habdat$fdate),
-               value = range(habdat$fdate)
-               )),
-    div(style='display: inline-block;text-align:left;margin-left: 25px',
-        selectInput(inputId = 'county',
-                label = "County",
-                choices = c('All',sort(unique(habdat$`County Name`))))),
-    tags$head(
-      tags$style(HTML('#button{color:black}'))#makes button text black
-    ),
-    div(style='display: inline-block;padding:15px;margin-left: 25px',
-       downloadButton('button','Download data')) #adds download button
+    
    ),#closes sidebar
-  dashboardBody(type = 'tabs',tags$style(type = "text/css", 
-                             "#map {height: calc(100vh - 80px) !important;}"),
-    tabsetPanel(tabPanel("Map",leafletOutput('map')),
-                tabPanel('Data', DTOutput('viewData')))
+  dashboardBody(
+    fluidRow(
+      box(
+        status = 'danger', width = 12, solidHeader = T, title = "DISCLAIMER", "This map shows HAB events voluntarily reported to the State Water Board's Surface Water Ambient Monitoring Program. Data provided are for general information purposes ", tags$strong('only'), " and may contain errors. The exact location, extent and toxicity of the reported bloom may not be accurate and may not affect the entire waterbody. The data are subject to change as new information is received. Please check back for updates."),
+             
+      column(width = 9,type = 'tabs',tags$style(type = "text/css", 
+                             "#map {height: calc(100vh - 90px) !important;}"),
+             tabBox(
+               width = NULL,
+               title = "California Freshwater HABs", id = "tabset1",
+               tabPanel("Map",leafletOutput('map')),
+               tabPanel('Data', DTOutput('viewData')))
+            ),#close column1
+      
+      column(width = 3,
+             box(width = NULL,
+                 solidHeader = T, status = 'primary', title = 'Inputs',
+                 div(style='text-align:left;padding: 15px',
+                     sliderInput(inputId = 'date',
+                                 label = "Date range",
+                                 min = min(habdat$fdate),
+                                 max = max(habdat$fdate),
+                                 value = range(habdat$fdate)
+                     )),
+                 div(style='text-align:left; padding: 15px',
+                     selectInput(inputId = 'county',
+                                 label = "County",
+                                 choices = c('All',sort(unique(habdat$`County Name`))))),
+                 tags$head(
+                   tags$style(HTML('#button{color:black}'))#makes button text black
+                 ),
+                 div(style='text-align:left;padding: 15px',
+                     downloadButton('button','Download data')) #adds download button
+             ),#closes box
+             
+             box(width = NULL,
+                 status = 'warning', title = "Directions",
+               "Click on a point to get information about each bloom.",
+               tags$br(),tags$br(),
+               "Use the inputs above to narrow your selection by date and/or county.",
+               tags$br(),tags$br(),
+               "Click the 'Data' tab above the map to see more information about the current selection of HABs.",
+               tags$br(),tags$br(),
+               "Click the 'Download data' button to download the data for your selection of HABs.") #close box
+      )#close column2
+    )#close row1
   )# closes body
 )#closes ui
 
@@ -89,6 +114,10 @@ server <- function(input, output, session){
     return(subset)# returns datatable of new values 
     }) #closes reactive
   
+  # output$tabset1Selected <- renderText({
+  #   input$tabset1
+  # })
+  # 
   output$viewData <- renderDT(
     newdat() %>% 
       dplyr::group_by(`Official Water Body Name`) %>%
