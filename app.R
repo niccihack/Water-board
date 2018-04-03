@@ -48,11 +48,43 @@ ui <- dashboardPage(
     title = "CA FHAB Portal"
   ),
   dashboardSidebar(
+    sidebarMenu(
+      id = "menu", 
+      menuItem("Home", tabName = 'home', icon = icon('home')),
+      menuItem("Information", tabName = 'info', icon = icon('info-circle')),
+      menuItem("Monitoring", tabName = 'monitoring', icon = icon('binoculars'))
+    )
     
    ),#closes sidebar
   dashboardBody(
-    fluidRow(
-      box(
+    tabItems(
+      tabItem(tabName = 'home',
+              fluidRow(
+                valueBox(width=4,"Information","What is a HAB?", 
+                         icon = icon('question'), href = 'http://www.mywaterquality.ca.gov/habs/what/index.html'),
+                valueBox(width=4, "Report a bloom!","Have you seen a bloom?",
+                         icon = icon('bullhorn'), color = 'yellow',href = 'http://www.mywaterquality.ca.gov/habs/do/index.html#how'),
+                valueBox(width=4, "Advisories","Where are current blooms?", 
+                    icon = icon('map'), color = 'red')
+              ),
+              fluidRow(
+                box(width=12)
+              )),
+      tabItem(tabName = 'info',
+              box(title = "What are HABs?", solidHeader = T,status = 'success',
+                  tags$img(style = 'float: left;margin-right:15px;', 
+                           src='hab1.jpg',
+                           "At the base of the food chain in fresh, brackish, and marine systems are photosynthetic cyanobacteria and algae. Both single-celled microscopic and larger multicellular forms exist. When conditions are optimal, including light and temperature, levels of nutrients, and lack of water turbulence, cyanobacteria and some algae can quickly multiply into a harmful algal bloom (HAB). Some cyanobacteria and harmful algae can produce toxic chemicals, including cyanotoxins, domoic acid, and other algal toxins.")),
+              box(title = "Why should I be concerned?", 
+                  solidHeader = T,
+                  status = 'warning',
+                  tags$img(style = 'float: left;margin-right:15px;', 
+                           src='dead_fish.jpg',
+                           'Cyanobacteria and harmful algal blooms (HABs) can have negative impacts on the environment, people, pets, wildlife, or livestock, as well as the economy. Some HABs can produce large amounts of cyanotoxins or algal toxins, which can poison livestock, wildlife, and humans. Certain other types of cyanobacteria are nontoxic but can impart an unpleasant taste to water and fish as well as giving off an unpleasant smell as they die and decay. Cyanotoxins and algal toxins pose risks to the health and safety of people and pets recreating in water bodies, eating fish, and drinking water. They can accumulate in fish and shellfish to levels posing threats to people and wildlife consumers.',tags$br(), tags$br(),'The most researched group of freshwater HABs is cyanobacteria, or blue-green algae. These are problematic because they can impede recreational and beneficial uses of waterbodies by reducing aesthetics, lowering dissolved oxygen concentration, causing taste and odor problems in drinking water, and producing potent cyanotoxins, associated with illness and mortality in people, pets, livestock, and wildlife. Cyanobacteria blooms and their associated toxins have increased globally in geographic distribution, frequency, duration, and severity. Non-cyanobacteria HAB events have also increased, the most common of which is the golden haptophyte alga, which has caused fish kills in the east, mid-west and southern states, and Southern California.'))
+              ),#close info tab
+      tabItem(tabName = 'monitoring',
+              fluidRow(
+                box(
         status = 'danger', width = 12, solidHeader = T, title = "DISCLAIMER", "This map shows HAB events voluntarily reported to the State Water Board's Surface Water Ambient Monitoring Program. Data provided are for general information purposes ", tags$strong('only'), " and may contain errors. The exact location, extent and toxicity of the reported bloom may not be accurate and may not affect the entire waterbody. The data are subject to change as new information is received. Please check back for updates."),
              
       column(width = 9,type = 'tabs',tags$style(type = "text/css", 
@@ -93,9 +125,13 @@ ui <- dashboardPage(
                tags$br(),tags$br(),
                "Click the 'Data' tab above the map to see more information about the current selection of HABs.",
                tags$br(),tags$br(),
-               "Click the 'Download data' button to download the data for your selection of HABs.") #close box
-      )#close column2
-    )#close row1
+               "Click the 'Download data' button to download the data for your selection of HABs.",
+               tags$br(),tags$br(),
+               tags$a("What do these advisories mean?",href='http://www.mywaterquality.ca.gov/habs/resources/index.html#recreational')) #close box
+        )#close column2
+       )#close row1
+     )#close monitoring tab
+    )#close tabItems
   )# closes body
 )#closes ui
 
@@ -118,6 +154,7 @@ server <- function(input, output, session){
   #   input$tabset1
   # })
   # 
+  
   output$viewData <- renderDT(
     newdat() %>% 
       dplyr::group_by(`Official Water Body Name`) %>%
@@ -143,12 +180,17 @@ server <- function(input, output, session){
   )#produces download button
   
   output$map <- renderLeaflet({
-    leaflet() %>% 
+    leaflet(options = leafletOptions(minZoom = 6)) %>% 
       addProviderTiles(providers$CartoDB.Positron) %>%
       setView(lng = mean(habdat$lng), 
               lat = mean(habdat$lat), 
-              zoom = 6)
+              zoom = 6) %>%
+      setMaxBounds(lng1 = -130.3933357,
+                   lat1 = 43.108951,
+                   lng2 = -109.729128,
+                   lat2 = 32.144795)
   })
+  
   
   #Set up content for popups 
   popup <- function(name, lng, lat){
@@ -159,6 +201,9 @@ server <- function(input, output, session){
       tags$strong("Hazard level: "),
       sprintf(as.character(selectedwater$`Typeof Sign`)),
       tags$br(),
+      tags$strong("Last date observed: "),
+      sprintf(as.character(selectedwater$ldate)),
+      tags$br(),
       tags$strong("Regional water board: "), 
       sprintf(as.character(selectedwater$`Regional Water Board__1`)),
       tags$br(),
@@ -168,7 +213,11 @@ server <- function(input, output, session){
     leafletProxy('map', data = newdat()) %>% addPopups(lng = lng,lat = lat, content)
   }
     
-    
+  #Attempt to have points on map show up when map rendered and not with inputs
+  #from https://github.com/rstudio/leaflet/issues/242
+ #outputOptions(output, 'map', suspendWhenHidden = F) 
+  #Does nothing or throws errors
+ 
   #Adds circle markers and legend for HAB signs
   observe({
     leafletProxy('map') %>%
@@ -182,12 +231,12 @@ server <- function(input, output, session){
                  popup = popup,
                  layerId = newdat()$`Official Water Body Name`) %>% #need this id so popup knows where to find the data
       clearControls() %>% #need to clear controls otherwise it keeps adding more legends on top of the old ones
-      addLegend("bottomleft", 
+      addLegend("topleft", 
                 colors = unique(newdat()[order(newdat()$`Typeof Sign`),]$color),
                 values = ~`Typeof Sign`,
                 labels = sort(unique(newdat()$`Typeof Sign`)),
                 opacity = 1,
-                title = 'HAB hazard level') %>%
+                title = 'HAB hazard level')%>%
       clearPopups()
       event <- input$map_shape_click #adds popup on click
       if(is.null(event)){
@@ -198,8 +247,8 @@ server <- function(input, output, session){
       })
       }
   })
-  
-}
+}#close server
+
 
 # Run the application 
 shinyApp(ui = ui, server = server)
