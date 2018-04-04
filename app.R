@@ -9,38 +9,35 @@ library(shiny)
 library(leaflet)
 library(shinydashboard)
 library(DT)
+library(shiny.router)
 
-habdat <- hab_incident_detail
+habdat <- readxl::read_excel("~/HAB/hab_incident_detail.xlsx")
 habdat$fdate <- lubridate::date(habdat$`First Observed`)
 habdat$ldate = lubridate::date(habdat$`Bloom Last Verified`)
-habdat <- habdat %>% dplyr::mutate(color = dplyr::recode(`Typeof Sign`, 
-                                           'Closed' = '#D00',
-                                           'Danger' = '#F00',
-                                           'Closed to Swimming' = '#F4E',
-                                           'No Contact Advisory' = '#F09',
-                                           'Caution and Danger' = '#F40',
-                                           'Precaution: Rinse Off' = '#F60',
-                                           'Caution' = '#F80',
-                                           'Warning to Caution' = '#FA4',
-                                           'Warning' = '#FC0',
-                                           'Advisory' = '#FE0',
-                                           'None' = '#FFFAFA',
-                                           'Unknown' = '#a1a1a1')) %>% 
-  dplyr::arrange()
+habdat = habdat %>% dplyr::mutate(
+  advisory = dplyr::recode(`Typeof Sign`, 
+                           'Closed' = 'Danger',
+                           'Danger' = 'Danger',
+                           'Closed to Swimming' = 'Danger',
+                           'No Contact Advisory' = 'Danger',
+                           'Caution and Danger' = 'Danger',
+                           'Precaution: Rinse Off' = 'Warning',
+                           'Caution' = 'Caution',
+                           'Warning to Caution' = 'Warning',
+                           'Warning' = 'Warning',
+                           'Advisory' = 'Caution',
+                           'None' = 'Suspect',
+                           'Unknown' = 'Suspect'))
+habdat <- habdat %>% dplyr::mutate(color = dplyr::recode(advisory, 
+                                           'Danger' = 'red',
+                                           'Caution' = 'yellow',
+                                           'Warning' = 'orange',
+                                           'Suspect' = '#D8BFD8')) 
 #specify levels to get correct order in legend
-habdat$`Typeof Sign` = factor(habdat$`Typeof Sign`, 
-                                 levels = c('Closed',
-                                            'Danger',
-                                            'Closed to Swimming',
-                                            'No Contact Advisory',
-                                            'Caution and Danger',
-                                            'Precaution: Rinse Off',
-                                            'Caution',
-                                            'Warning to Caution',
-                                            'Warning',
-                                            'Advisory',
-                                            'None',
-                                            'Unknown'))
+habdat$advisory = factor(habdat$advisory,levels = c('Danger',
+                                                    'Warning',
+                                                    'Caution',
+                                                    'Suspect'))
 habdat = dplyr::rename(habdat, lng = `Longitude (Custom SQL Query)`, lat = latitude) 
 
 ui <- dashboardPage(
@@ -52,7 +49,7 @@ ui <- dashboardPage(
       id = "menu", 
       menuItem("Home", tabName = 'home', icon = icon('home')),
       menuItem("Information", tabName = 'info', icon = icon('info-circle')),
-      menuItem("Monitoring", tabName = 'monitoring', icon = icon('binoculars'))
+      menuItem("Monitoring", tabName = 'monitoring', icon = icon('binoculars'),badgeLabel = "new", badgeColor = "green")
     )
     
    ),#closes sidebar
@@ -68,24 +65,63 @@ ui <- dashboardPage(
                     icon = icon('map'), color = 'red')
               ),
               fluidRow(
-                box(width=12)
-              )),
+                box(status = 'success',
+                    solidHeader = T,
+                    title = 'Portal Updates',
+                    tags$head(HTML('link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css"')),
+                    tags$i(class = "fa fa-bell"),
+                    tags$a('Check out the new California Freshwater HABs map!'),
+                    width = 12),
+                box(width=4,
+                    height = 600,
+                    status = 'primary',
+                    solidHeader = T,
+                    tags$strong(style = 'text-align:center;','California Freshwater HAB Reports'),tags$br(),'View an interactive map of recently reported freshwater HABs statewide.',tags$br(),tags$br(),
+                    tags$img(style = 'height: 500px; width: 400px; display: block; margin-left: auto; margin-right:auto;',src="map_events.jpg")),
+                box(width=4,
+                    height = 600,
+                    status = 'primary',
+                    solidHeader = T,
+                    tags$strong('California Marine HABs'),tags$br(),'Check out tons of information on ocean HABs statewide including an interactive map of recently reported marine HABs and the most recent incidents involving saltwater HABs.',tags$br(),
+                    tags$img(style='height: 500px; width: 400px; display: block; margin-left: auto; margin-right:auto;',src='CAhab.jpg')),
+                box(width=4,
+                    height = 600,
+                    status = 'primary',
+                    solidHeader = T,
+                    tags$strong('Observing Freshwater HABs using Satellites'),tags$br(),'View an interactive map of HABs in large California water bodies using satellite imagery.',tags$br(),
+                    tags$img(style='height: 500px; width: 400px; display: block; margin-left: auto; margin-right:auto;', src='map_satellite_tuc.png'))
+                )#close row
+              ),#close tabItem,
       tabItem(tabName = 'info',
-              box(title = "What are HABs?", solidHeader = T,status = 'success',
+              fluidRow(
+                column(width = 7,
+              box(title = "What are HABs?", 
+                  width = NULL,
+                  solidHeader = T,status = 'success',
                   tags$img(style = 'float: left;margin-right:15px;', 
                            src='hab1.jpg',
-                           "At the base of the food chain in fresh, brackish, and marine systems are photosynthetic cyanobacteria and algae. Both single-celled microscopic and larger multicellular forms exist. When conditions are optimal, including light and temperature, levels of nutrients, and lack of water turbulence, cyanobacteria and some algae can quickly multiply into a harmful algal bloom (HAB). Some cyanobacteria and harmful algae can produce toxic chemicals, including cyanotoxins, domoic acid, and other algal toxins.")),
+                           "At the base of the food chain in fresh, brackish, and marine systems are photosynthetic cyanobacteria and algae. Both single-celled microscopic and larger multicellular forms exist. When conditions are optimal, including light and temperature, levels of nutrients, and lack of water turbulence, cyanobacteria and some algae can quickly multiply into a harmful algal bloom (HAB). Some cyanobacteria and harmful algae can produce toxic chemicals, including cyanotoxins, domoic acid, and other algal toxins.", tags$br(),tags$br(),"Cyanobacteria and algae are present in most freshwater and marine aquatic ecosystems, and perform many roles that are vital for ecosystem health. Cyanobacteria and algae provide organic matter and energy to higher trophic levels, such as aquatic insects and fish.")),
               box(title = "Why should I be concerned?", 
+                  width = NULL,
                   solidHeader = T,
                   status = 'warning',
                   tags$img(style = 'float: left;margin-right:15px;', 
                            src='dead_fish.jpg',
-                           'Cyanobacteria and harmful algal blooms (HABs) can have negative impacts on the environment, people, pets, wildlife, or livestock, as well as the economy. Some HABs can produce large amounts of cyanotoxins or algal toxins, which can poison livestock, wildlife, and humans. Certain other types of cyanobacteria are nontoxic but can impart an unpleasant taste to water and fish as well as giving off an unpleasant smell as they die and decay. Cyanotoxins and algal toxins pose risks to the health and safety of people and pets recreating in water bodies, eating fish, and drinking water. They can accumulate in fish and shellfish to levels posing threats to people and wildlife consumers.',tags$br(), tags$br(),'The most researched group of freshwater HABs is cyanobacteria, or blue-green algae. These are problematic because they can impede recreational and beneficial uses of waterbodies by reducing aesthetics, lowering dissolved oxygen concentration, causing taste and odor problems in drinking water, and producing potent cyanotoxins, associated with illness and mortality in people, pets, livestock, and wildlife. Cyanobacteria blooms and their associated toxins have increased globally in geographic distribution, frequency, duration, and severity. Non-cyanobacteria HAB events have also increased, the most common of which is the golden haptophyte alga, which has caused fish kills in the east, mid-west and southern states, and Southern California.'))
-              ),#close info tab
+                           'Cyanobacteria and harmful algal blooms (HABs) can have negative impacts on the environment, people, pets, wildlife, or livestock, as well as the economy. Some HABs can produce large amounts of cyanotoxins or algal toxins, which can poison livestock, wildlife, and humans. Certain other types of cyanobacteria are nontoxic but can impart an unpleasant taste to water and fish as well as giving off an unpleasant smell as they die and decay. Cyanotoxins and algal toxins pose risks to the health and safety of people and pets recreating in water bodies, eating fish, and drinking water. They can accumulate in fish and shellfish to levels posing threats to people and wildlife consumers.',tags$br(), tags$br(),'The most researched group of freshwater HABs is cyanobacteria, or blue-green algae. These are problematic because they can impede recreational and beneficial uses of waterbodies by reducing aesthetics, lowering dissolved oxygen concentration, causing taste and odor problems in drinking water, and producing potent cyanotoxins, associated with illness and mortality in people, pets, livestock, and wildlife. Cyanobacteria blooms and their associated toxins have increased globally in geographic distribution, frequency, duration, and severity. Non-cyanobacteria HAB events have also increased, the most common of which is the golden haptophyte alga, which has caused fish kills in the east, mid-west and southern states, and Southern California.', tags$br(), tags$br(),tags$a('What to know more?', href='https://www.cdc.gov/habs/pdf/habsphysician_card.pdf'))),
+              box(title = "Where do they come from?",
+                  width = NULL,
+                  solidHeader = T,
+                  status = 'primary',
+                  tags$img(style = 'float: left;margin-right:15px;',
+                           src = 'hab2.jpg',
+                           "There are a large number of environmental factors that have been linked to bloom increases and toxin production. These include climate change, nutrient over-enrichment (nitrogen and phosphorus), higher temperatures, salinity, water residence time (stagnation), vertical lake stratification, organic matter enrichment, and high pH (more alkaline)."))
+            )#close column
+          )#close row
+      ),#close info tab
       tabItem(tabName = 'monitoring',
               fluidRow(
                 box(
-        status = 'danger', width = 12, solidHeader = T, title = "DISCLAIMER", "This map shows HAB events voluntarily reported to the State Water Board's Surface Water Ambient Monitoring Program. Data provided are for general information purposes ", tags$strong('only'), " and may contain errors. The exact location, extent and toxicity of the reported bloom may not be accurate and may not affect the entire waterbody. The data are subject to change as new information is received. Please check back for updates."),
+        status = 'danger', width = 12, solidHeader = T, title = "DISCLAIMER", "This map shows HAB events voluntarily reported to the State Water Board's Surface Water Ambient Monitoring Program. Data provided are for general information purposes ", tags$strong('only'), " and may contain errors. The exact location, extent and toxicity of the reported bloom may not be accurate and may not affect the entire waterbody. The data are subject to change as new information is received. Please check back as blooms are updated daily."),
              
       column(width = 9,type = 'tabs',tags$style(type = "text/css", 
                              "#map {height: calc(100vh - 90px) !important;}"),
@@ -150,18 +186,14 @@ server <- function(input, output, session){
     return(subset)# returns datatable of new values 
     }) #closes reactive
   
-  # output$tabset1Selected <- renderText({
-  #   input$tabset1
-  # })
-  # 
   
   output$viewData <- renderDT(
     newdat() %>% 
       dplyr::group_by(`Official Water Body Name`) %>%
-      dplyr::summarise(County = `County Name`,
+      dplyr::summarise('County' = `County Name`,
                        'Regional waterboard' = `Regional Water Board__1`,
                        'Water manager' = `Water Body Manager`,
-                       'Hazard level' = `Typeof Sign`,
+                       'Hazard level' = advisory,
                        'First date observed' = as.character(fdate),
                        'Last date observed' = as.character(ldate),
                        'Are signs present?' = `Posted Sign Description`,
@@ -172,7 +204,7 @@ server <- function(input, output, session){
   
   output$button <- downloadHandler( 
     filename= function(){
-      paste("HAB",input$date[1],'to', input$date[2],".csv",sep = "")
+      paste("HAB",input$date[1],'to', input$date[2],'in',input$county,"county.csv",sep = "")
     },
     content = function(file){
       write.csv(newdat(), file)
@@ -199,7 +231,7 @@ server <- function(input, output, session){
       tags$h4(as.character(selectedwater$`Official Water Body Name`)),
       tags$br(),
       tags$strong("Hazard level: "),
-      sprintf(as.character(selectedwater$`Typeof Sign`)),
+      sprintf(as.character(selectedwater$advisory)),
       tags$br(),
       tags$strong("Last date observed: "),
       sprintf(as.character(selectedwater$ldate)),
@@ -232,9 +264,9 @@ server <- function(input, output, session){
                  layerId = newdat()$`Official Water Body Name`) %>% #need this id so popup knows where to find the data
       clearControls() %>% #need to clear controls otherwise it keeps adding more legends on top of the old ones
       addLegend("topleft", 
-                colors = unique(newdat()[order(newdat()$`Typeof Sign`),]$color),
-                values = ~`Typeof Sign`,
-                labels = sort(unique(newdat()$`Typeof Sign`)),
+                colors = unique(newdat()[order(newdat()$advisory),]$color),
+                values = ~advisory,
+                labels = sort(unique(newdat()$advisory)),
                 opacity = 1,
                 title = 'HAB hazard level')%>%
       clearPopups()
