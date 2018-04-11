@@ -1,0 +1,112 @@
+---
+title: "RecFIN"
+author: "Nicole Hack"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+  word_document: default
+  html_notenook: default
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+#Started 4 April 2018
+knitr::opts_chunk$set(echo = F, warning = F, message = F)
+```
+
+```{r, echo=F, include=F}
+packages <- c('readxl',
+              'tidyverse',
+              'readr',
+              'data.table',
+              'dplyr',
+              'car',
+              'ggplot2',
+              'nortest',
+              'broom',
+              'lme4')
+lapply(packages, require, character.only = T)
+
+#load data
+recfin = read_csv("C:/Users/NHack/Downloads/CTE001-California-2015-2017.csv")
+```
+
+Summary table
+
+```{r}
+sumdat = dplyr::group_by(recfin,RECFIN_WATER_AREA_NAME)%>% dplyr::summarise(n=n())
+knitr::kable(sumdat, caption="Total number of records by mode and area")
+```
+---
+New Table 3 - Ranks of species by region
+
+```{r}
+norcal = dplyr::filter(recfin, RECFIN_SUBREGION_NAME == 'Northern California') %>% 
+  dplyr::group_by(RECFIN_WATER_AREA_NAME, SPECIES) %>%
+  dplyr::summarise('count' = sum(SUM_RETAINED_NUM), 'mass' = sum(SUM_RETAINED_MT))%>%
+  dplyr::arrange(RECFIN_WATER_AREA_NAME,desc(count)) %>% #sort my decreasing count
+  dplyr::mutate(rank_count = 1:length(RECFIN_WATER_AREA_NAME))%>% #add rank numbers
+  dplyr::arrange(RECFIN_WATER_AREA_NAME,desc(mass)) %>% #sort my decreasing mass
+  dplyr::mutate(rank_mass = 1:length(RECFIN_WATER_AREA_NAME)) %>%
+  dplyr::mutate(avg_rank = ((rank_count+rank_mass)/2)) %>%
+  dplyr::arrange(RECFIN_WATER_AREA_NAME,avg_rank) %>%
+  dplyr::top_n(12, desc(avg_rank))
+
+knitr::kable(norcal, caption = "Northern California")
+
+socal = dplyr::filter(recfin, RECFIN_SUBREGION_NAME == 'Southern California') %>%
+  dplyr::group_by(RECFIN_WATER_AREA_NAME, SPECIES) %>%
+  dplyr::summarise('count' = sum(SUM_RETAINED_NUM), 'mass' = sum(SUM_RETAINED_MT))%>%
+  dplyr::arrange(RECFIN_WATER_AREA_NAME,desc(count)) %>% #sort my decreasing count
+  dplyr::mutate(rank_count = 1:length(RECFIN_WATER_AREA_NAME))%>% #add rank numbers
+  dplyr::arrange(RECFIN_WATER_AREA_NAME,desc(mass)) %>% #sort my decreasing mass
+  dplyr::mutate(rank_mass = 1:length(RECFIN_WATER_AREA_NAME)) %>%
+  dplyr::mutate(avg_rank = ((rank_count+rank_mass)/2)) %>%
+  dplyr::arrange(RECFIN_WATER_AREA_NAME,avg_rank) %>%
+  dplyr::top_n(12, desc(avg_rank))
+
+knitr::kable(socal, caption = "Southern California")
+```
+
+Grouped species
+
+```{r}
+#Create new column of grouped species
+recshort=recfin %>% 
+  dplyr::mutate(genus = 
+    case_when(
+      grepl('Rockfish|Cowcod|Bocaccio|Chilipepper',SPECIES, ignore.case = T) ~'Rockfish spp.',
+    grepl('perch',SPECIES,ignore.case = T)~'Perch spp.',
+    grepl('Croaker|Queenfish|Corbina|Corvina',SPECIES,ignore.case = T) ~'Croaker spp.',
+    grepl('Ray|Shark|Skate|Smoothhound|Guitarfish|Ratfish',SPECIES,ignore.case=T)~'Sharks, skates & rays',
+    TRUE~SPECIES))
+
+knitr::kable(recshort, caption = "Species groups")
+```
+
+---
+New Table 4 Summary of catch by species
+
+```{r}
+species_norcal = recfin[recfin$SPECIES %in% norcal$SPECIES,] %>%#select only species in the top rank
+  dplyr::select(RECFIN_WATER_AREA_NAME, RECFIN_SUBREGION_NAME, SPECIES, SUM_RETAINED_MT, SUM_RETAINED_NUM) %>%
+  dplyr::filter(RECFIN_SUBREGION_NAME == 'Northern California') %>% 
+  dplyr::group_by(RECFIN_WATER_AREA_NAME,SPECIES) %>%
+  dplyr::summarise(Num = round(sum(SUM_RETAINED_NUM)), MT = round(sum(SUM_RETAINED_MT))) %>%
+  tidyr::gather(Name,value, c(MT,Num))%>%
+  tidyr::spread(RECFIN_WATER_AREA_NAME,value, fill = 0)
+
+knitr::kable(species_norcal, caption = "Northern CA")
+
+species_socal = recfin[recfin$SPECIES %in% socal$SPECIES,] %>%
+  dplyr::select(RECFIN_WATER_AREA_NAME, RECFIN_SUBREGION_NAME, SPECIES, SUM_RETAINED_MT, SUM_RETAINED_NUM) %>%
+  dplyr::filter(RECFIN_SUBREGION_NAME == 'Southern California') %>% 
+  dplyr::group_by(RECFIN_WATER_AREA_NAME,SPECIES) %>%
+  dplyr::summarise(Num = round(sum(SUM_RETAINED_NUM)), MT = round(sum(SUM_RETAINED_MT))) %>%
+  tidyr::gather(Name,value, c(MT,Num))%>%
+  tidyr::spread(RECFIN_WATER_AREA_NAME,value, fill = 0)
+
+knitr::kable(species_socal, caption = 'Southern CA')
+
+```
+
