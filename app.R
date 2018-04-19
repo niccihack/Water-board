@@ -43,13 +43,15 @@ habdat = dplyr::rename(habdat, lng = `Longitude (Custom SQL Query)`, lat = latit
 ui <- dashboardPage(
   dashboardHeader(
     title = "CA FHAB Portal"
-  ),
+    ),
   dashboardSidebar(
     sidebarMenu(
       id = "menu", 
       menuItem("Home", tabName = 'home', icon = icon('home')),
       menuItem("Information", tabName = 'info', icon = icon('info-circle')),
-      menuItem("Monitoring", tabName = 'monitoring', icon = icon('binoculars'),badgeLabel = "new", badgeColor = "green")
+      menuItem("Monitoring", tabName = 'monitoring', icon = icon('binoculars'),badgeLabel = "new", badgeColor = "green"),
+      menuItem("Report a bloom", tabName='report', icon = icon('bullhorn')),
+      menuItem("Tool box", tabName = 'toolbox', icon=icon('wrench'))
     )
     
    ),#closes sidebar
@@ -97,12 +99,14 @@ ui <- dashboardPage(
                 column(width = 7,
               box(title = "What are HABs?", 
                   width = NULL,
+                  collapsible = T,
                   solidHeader = T,status = 'success',
                   tags$img(style = 'float: left;margin-right:15px;', 
                            src='hab1.jpg',
                            "At the base of the food chain in fresh, brackish, and marine systems are photosynthetic cyanobacteria and algae. Both single-celled microscopic and larger multicellular forms exist. When conditions are optimal, including light and temperature, levels of nutrients, and lack of water turbulence, cyanobacteria and some algae can quickly multiply into a harmful algal bloom (HAB). Some cyanobacteria and harmful algae can produce toxic chemicals, including cyanotoxins, domoic acid, and other algal toxins.", tags$br(),tags$br(),"Cyanobacteria and algae are present in most freshwater and marine aquatic ecosystems, and perform many roles that are vital for ecosystem health. Cyanobacteria and algae provide organic matter and energy to higher trophic levels, such as aquatic insects and fish.")),
               box(title = "Why should I be concerned?", 
                   width = NULL,
+                  collapsible = T,
                   solidHeader = T,
                   status = 'warning',
                   tags$img(style = 'float: left;margin-right:15px;', 
@@ -110,18 +114,27 @@ ui <- dashboardPage(
                            'Cyanobacteria and harmful algal blooms (HABs) can have negative impacts on the environment, people, pets, wildlife, or livestock, as well as the economy. Some HABs can produce large amounts of cyanotoxins or algal toxins, which can poison livestock, wildlife, and humans. Certain other types of cyanobacteria are nontoxic but can impart an unpleasant taste to water and fish as well as giving off an unpleasant smell as they die and decay. Cyanotoxins and algal toxins pose risks to the health and safety of people and pets recreating in water bodies, eating fish, and drinking water. They can accumulate in fish and shellfish to levels posing threats to people and wildlife consumers.',tags$br(), tags$br(),'The most researched group of freshwater HABs is cyanobacteria, or blue-green algae. These are problematic because they can impede recreational and beneficial uses of waterbodies by reducing aesthetics, lowering dissolved oxygen concentration, causing taste and odor problems in drinking water, and producing potent cyanotoxins, associated with illness and mortality in people, pets, livestock, and wildlife. Cyanobacteria blooms and their associated toxins have increased globally in geographic distribution, frequency, duration, and severity. Non-cyanobacteria HAB events have also increased, the most common of which is the golden haptophyte alga, which has caused fish kills in the east, mid-west and southern states, and Southern California.', tags$br(), tags$br(),tags$a('What to know more?', href='https://www.cdc.gov/habs/pdf/habsphysician_card.pdf'))),
               box(title = "Where do they come from?",
                   width = NULL,
+                  collapsible = T,
                   solidHeader = T,
                   status = 'primary',
                   tags$img(style = 'float: left;margin-right:15px;',
                            src = 'hab2.jpg',
                            "There are a large number of environmental factors that have been linked to bloom increases and toxin production. These include climate change, nutrient over-enrichment (nitrogen and phosphorus), higher temperatures, salinity, water residence time (stagnation), vertical lake stratification, organic matter enrichment, and high pH (more alkaline)."))
-            )#close column
+            ),#close column
+            column(width=5,
+                   box(width=NULL,
+                       status = 'success',
+                       h3("How to be safe")),
+                   box(width = NULL,
+                       status = 'primary',
+                       h3("What are we doing to help?"))
+                   )#close column
           )#close row
       ),#close info tab
       tabItem(tabName = 'monitoring',
               fluidRow(
                 box(
-        status = 'danger', width = 12, solidHeader = T, title = "DISCLAIMER", "This map shows HAB events voluntarily reported to the State Water Board's Surface Water Ambient Monitoring Program. Data provided are for general information purposes ", tags$strong('only'), " and may contain errors. The exact location, extent and toxicity of the reported bloom may not be accurate and may not affect the entire waterbody. The data are subject to change as new information is received. Please check back as blooms are updated daily."),
+        status = 'danger', width = 12, solidHeader = T, title = "DISCLAIMER", "This map shows voluntarily reported HAB events and is for general information purposes ", tags$strong('only')," and may contain errors. The exact location, extent and toxicity of the reported bloom may not be accurate and may not affect the entire waterbody. Due to monetary constraints not all water bodies are monitored on a regular basis so no advisory does not mean no HAB is present. The data are subject to change as new information is received. Please check back as blooms are updated daily."),
              
       column(width = 9,type = 'tabs',tags$style(type = "text/css", 
                              "#map {height: calc(100vh - 90px) !important;}"),
@@ -166,7 +179,52 @@ ui <- dashboardPage(
                tags$a("What do these advisories mean?",href='http://www.mywaterquality.ca.gov/habs/resources/index.html#recreational')) #close box
         )#close column2
        )#close row1
-     )#close monitoring tab
+     ),#close monitoring tab
+     tabItem(tabName = 'report',
+             fluidRow(
+               infoBox(width=4,"Call",HTML(paste('1 (916) 341 - 5357', tags$br(),'Toll free: 1 (844) 729 - 6466')) , 
+                        icon = icon('phone')),
+               infoBox(width=4, "Email","CyanoHAB.Reports@waterboards.ca.gov",
+                        icon = icon('envelope'), color = 'teal'),
+               infoBox(width=4, "Mobile","Download the bloomWatch App", 
+                        icon = icon('mobile'), color = 'purple',href="https://cyanos.org/bloomwatch/", img(src='bloomWatch_logo_NoBackground.png', style = 'height: 50px; width: 100px; float: right; clear:right;margin-top:-30px;'))
+             ),#close row
+             box(
+               width = 12,
+               solidHeader = T,
+               status = 'primary',
+               title = "Fill out a Freshwater Bloom Incident Form",
+               
+               tags$img(style = 'float: left;margin-right:15px;',
+                        src = 'dog.jpg'),
+               h3("Fill out a form when reporting a bloom for the first time or updating the status on a current bloom. This includes a new animal or human illness or death.",tags$br(), tags$br(),"Reporting a harmful algal bloom or an animal or human illness associated with exposure to a bloom helps authorities understand where problems are occurring and to respond appropriately."),tags$br(), tags$br(),
+               tags$head(tags$style(HTML(".small-box {height: 120px; padding: 15px;}"))),
+               valueBox('Incident form','',icon = icon('edit'), href = "http://www.mywaterquality.ca.gov/habs/do/bloomreport.html")
+             ),#close box
+          fluidRow(
+             tabBox(
+               width = 12,
+               side = 'right',
+               title = 'How do I know it is a HAB?',
+               tabPanel(
+                 "ID Guides",
+                 tags$style(HTML("img{padding:30px;")),
+                 a(img(src='HABid.png',width = 250, height = 300, desc = "SWAMP Guide"), href='http://www.ccamp.net/Swamp/images/3/33/SOP-Visual_Guide_to_Observing_Blooms.pdf'),
+                 a(href = 'https://pubs.usgs.gov/of/2015/1164/ofr20151164.pdf',img(src='usgsHABguide.png',width = 250, height = 300)),
+                 a(img(src='ohio.png',width = 250, height = 300), href = 'http://epa.ohio.gov/portals/28/Documents/HAB/BloomCharacterizationGuide-DRAFT.pdf'),
+                 a(img(src='kentucky.png',width = 250, heigth= 300), href= 'http://geaugaswcd.com/yahoo_site_admin/assets/docs/Kannan-Lenca-2012-Pond_Scum_Field_Guide_c_VF_V2.88153308.pdf'),
+                 a(img(src='wash.png', width=250, height=300), href = 'https://cedar.wwu.edu/cgi/viewcontent.cgi?referer=http://www.mywaterquality.ca.gov/habs/do/index.html&httpsredir=1&article=1005&context=cedarbooks')
+               ),#close guides tab
+               tabPanel(
+                 "Algae Keys",
+                 tags$style(HTML("img{padding:30px;")),
+                 a(img(src='phycokey.png', width = 250, height= 300),href='http://cfb.unh.edu/phycokey/phycokey.htm'
+               ),
+               a(img(src='ca-algae-key.png',width=250, height=300),href='http://dbmuseblade.colorado.edu/DiatomTwo/sbsac_site/key.html')
+               )#close algae tab
+               )#close tabbox
+          )#close fluidRow
+     )#close report tab
     )#close tabItems
   )# closes body
 )#closes ui
