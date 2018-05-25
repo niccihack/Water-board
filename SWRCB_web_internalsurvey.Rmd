@@ -1,0 +1,219 @@
+---
+title: "State Water Board Web and Business Requirements Internal Survey"
+author: "Nicole Hack"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+  word_document: default
+  html_notenook: default
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, warning = F, message = F)
+```
+
+```{r, include = F}
+packages <- c('readxl',
+              'tidyverse',
+              'readr',
+              'data.table',
+              'dplyr',
+              'car',
+              'ggplot2',
+              'nortest',
+              'broom',
+              'lme4',
+              'magrittr',
+              'forcats')
+lapply(packages, require, character.only = T)
+```
+
+```{r}
+survey = read_csv("C:/Users/NHack/Water-board.git/Web Team - Internal Survey (Responses) - Form Responses 1.csv")
+survey$publishORcollectContent = as.factor(survey$publishORcollectContent)
+levels(survey$publishORcollectContent) = c('Collect Content', 'Publish Content', 'Both')
+survey = dplyr::mutate(survey, acron = car::recode(division,"
+                                                   'Division of Water Rights'= 'DWR';
+                                                   'Division of Drinking Water' = 'DDW';
+                                                   'Office of Research, Planning & Performance' = 'ORPP';
+                                                   'Division of Administrative Services'= 'DAS';
+                                                   'Office of the Delta Water Master' = 'ODWM';
+                                                   'Division of Financial Assistance' = 'DFA';
+                                                   'Office of Information Management & Analysis'= 'OIMA';
+                                                   'EEO' = 'EEO';
+                                                   'Office of Public Participation' = 'OPP';
+                                                   'Division of Water Quality - Surface Water Regulatory Branch' = 'DWQ-Surf'"))
+```
+
+
+
+
+
+Summary of number of programs who participated in this survey.
+
+```{r}
+sumsurvey = survey %>% dplyr::group_by(division, acron) %>%
+  dplyr::summarise(NumberOfPrograms = n())
+knitr::kable(sumsurvey)
+```
+
+##In your program(s), do you use use the web site to publish content, collect content, or both?
+
+```{r}
+websiteuse = survey %>% dplyr::group_by(acron) %>% count(publishORcollectContent)
+ggplot(websiteuse, aes(x = publishORcollectContent, y = n, fill = acron))+
+  geom_bar(stat = 'identity')+
+  xlab('')+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic()+
+  ylab('Number of Programs')+
+  theme(legend.title = element_blank())
+```
+
+##Identify the types and locations of content posted by your program(s). 
+
+```{r}
+locations = dplyr::select(survey,name,division, acron,programs,contains('Location'))
+locationsbyweb = tidyr::gather(locations, 'Document','Location',5:length(locations))
+locationsbyweb$Document = gsub('Location','',locationsbyweb$Document)
+levels(locationsbyweb$Location) = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A')
+ggplot(locationsbyweb, aes(x = acron, fill = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
+  geom_bar()+
+  ylab('Number of Programs')+
+  guides(fill = guide_legend(title = 'Web Page'))+
+  coord_flip()+
+  scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic()+
+  theme(axis.title.y = element_blank())
+```
+
+
+
+```{r}
+ggplot(locationsbyweb, aes(x = Document, fill = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
+  geom_bar()+
+  ylab('Number of Programs')+
+  guides(fill = guide_legend(title = 'Web Page'))+
+  coord_flip()+
+  scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic()+
+  theme(axis.title.y = element_blank())
+```
+
+##What are the most applicable core business use categories for the web page(s) used by your program(s)?
+
+```{r}
+library(splitstackshape)
+surveyFunction = cSplit(survey,'Function', ',') %>%
+  tidyr::gather('FunNum','MainCat',27:length(.)) %>%
+  dplyr::select('name', 'division', 'acron','programs', 'MainCat')
+surveyFunction$MainCat = car::recode(surveyFunction$MainCat,"'Announcements' = 'Annoucements';
+              'Public Record (Orders' = 'Public Records';
+              'Coordination/Organizational Use (Agendas' = 'Coordination/Organizational Use';
+              'Achievements/ Work Products' = 'Achievements/ Work Products';
+              'Education & Training' = 'Education & Training';
+              'Outreach' = 'Outreach';
+              'Program Overview/Information' = 'Program Overview/Information';
+              'Repository/Library/Collection (of internally and externally developed resources and links)' = 'Repository';
+              else = NA")
+surveyFunction = surveyFunction[complete.cases(surveyFunction),]
+
+ggplot(surveyFunction, aes(fill = acron, x = fct_infreq(MainCat)))+
+  geom_bar()+
+  ylab('Number of Programs')+
+  guides(fill = guide_legend(title = ''))+
+  coord_flip()+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic()+
+  theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+##Who are the target audiences for the web pages used by your program?
+
+```{r}
+audience = survey %>% cSplit('audience', ',') %>%
+  tidyr::gather('Trash','Audience',27:length(.)) %>%
+  dplyr::select('name', 'division','acron', 'programs', 'Audience')
+audience$Audience = car::recode(audience$Audience,"
+'Internal Staff' = 'Internal Staff';
+'Private Industry (Ag' = 'Private Industry';
+'Non-Government Organizations (NGOs)' = 'Non-Government Organizations (NGOs)';
+'General Public' = 'General Public';
+'Businesses' = 'Businesses';
+'Municipalities' = 'Municipalities';
+'Management' = 'Management';
+'Other Agencies' = 'Other Agencies';
+'Tribes' = 'Tribes';
+'Citizen Scientists' = 'Citizen Scientists';
+'Certified operators' = 'Certified operators';
+'Retail and wholesale water suppliers throughout the state with an emphasis on 410 urban water suppliers.' = 'Water suppliers';
+else = NA")
+audience = audience[complete.cases(audience),]
+
+ggplot(audience, aes(fill = acron, x = fct_infreq(Audience)))+
+  geom_bar()+
+  ylab('Number of Programs')+
+  guides(fill = guide_legend(title = ''))+
+  coord_flip()+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic()+
+  theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+##Identify the number of staff utilized to keep content relevant and current. 
+
+```{r}
+sumstaff = survey %>% dplyr::group_by(acron) %>% dplyr::summarise(staffnum = sum(ceiling(Staffnum)),webhrs = sum(ceiling(hoursnum)))
+sumstaff$acron = reorder(sumstaff$acron, sumstaff$staffnum)
+ggplot(sumstaff, aes(x = acron, y = staffnum))+
+  geom_bar(stat = 'identity', color = 'black', fill = 'Blue')+
+  ylab('Number of staff')+
+  xlab('Divisions & Offices')+
+  guides(fill = guide_legend(title = ''))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic()+
+  theme(plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+##Identify the approximate amount of hours expended each month to keep content relevant and current.
+
+```{r}
+ggplot(sumstaff, aes(x = reorder(acron, webhrs), y = webhrs))+
+  geom_bar(stat = 'identity', color = 'black', fill = 'Blue')+
+  ylab('Number of hr/mo')+
+  xlab('Divisions & Offices')+
+  guides(fill = guide_legend(title = ''))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic()+
+  theme(plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+
+ggplot(sumstaff, aes(x = staffnum, y = webhrs, color = acron))+
+  geom_point()+
+  xlab('Number of Staff')+
+  ylab('Number of hr/mo')+
+  guides(color = guide_legend(title = ''))+
+  theme_classic()+
+  theme(plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+* For comparison, an employee working 24 hr/mo works about 5.5 hr/wk
+
+
+##How frequently is content updated from your program(s)?
+
+```{r}
+update = survey %>% dplyr::group_by(acron) %>% count(ContentUpdate) 
+update$ContentUpdate = as.factor(update$ContentUpdate)
+levels(update$ContentUpdate) = c('Yearly','Quarterly','Monthly','Weekly','Daily','Hourly')
+ggplot(update, aes(x = ContentUpdate, y = n, fill = acron))+
+  geom_bar(stat = 'identity')+
+  ylab('Number of programs')+
+  xlab('Divisions & Offices')+
+  guides(fill = guide_legend(title = ''))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic()+
+  theme(plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
