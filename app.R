@@ -6,15 +6,13 @@
 #http://www.mywaterquality.ca.gov/habs/where/freshwater_events.html
 
 library(shiny)
-library(leaflet)
 library(shinydashboard)
 library(shinyjs)
 library(DT)
-library(shiny.router)
 library(rdrop2)
 
 # Define the fields we want to save from the form
-fields <- c("talkselect", "used_shiny", "r_num_years")
+fields <- c("talkselect", "rank", "interest", "clarity")
 
 # which fields are mandatory
 fieldsMandatory <- "talkselect"
@@ -50,11 +48,10 @@ shinyApp(
              div(
                id='form',tags$hr(),
                selectInput("talkselect",h3("Select a talk"),
-                           choices = list("Working with Nature Across the Land-Use Spectrum: a Holistic Approach to Ecological Resilience","Urban Ecology: Designing the Climate-Resilient Cities of the Future","California’s Future – Warmer, Drier and Wetter","Effects of Climate Uncertainty on the Development and Evaluation of Adaptation Strategies","Reexamination of Sediment Management in Newport Bay under Accelerating Sea-Level Rise","Use of Urban Vegetation As Climate Adaptation- Effective, and Low Cost When Done Well","Land Use Change, Fire, Cannabis","Erosion and Best Management Practices after Forest Fire","Drinking Water Quality Impacts of Watershed Fires: A Case Study","Panel Discussion: How to address water quality monitoring problems associated with fire?","Lightning Talks: Short presentations on innovative tech and special studies","Monitoring Bioaccumulation in California’s Changing Landscapes","Remote Sensing of Cyanobacteria Abundance: Next Steps in Utilizing Satellite Imagery and Data","Statewide Contaminant and Toxicity Monitoring Related to Land Use","From Open Data to Open Indicators","A Vision for More Effective Use of Biological Data in Water Resource
-Management", "Prioritizing Management Goals for Stream Biological Integrity Within the Context of Landscape Constraints","Using an Interactive Dashboard to Communicate Bioassessment Data", "eDNA Methods and Application for several State and Federally Listed Aquatic Species", "Panel Discussion: What are the Water Data Needs to Address the Management Decisions Related to Landscape Change?","Data Story and Visualization Panel Discussion")),
-               checkboxInput("used_shiny", "I've built a Shiny app in R before", FALSE),
-               sliderInput("r_num_years", "Number of years using R",
-                           0, 25, 2, ticks = FALSE),
+                           choices = list("Working with Nature Across the Land-Use Spectrum: a Holistic Approach to Ecological Resilience","Urban Ecology: Designing the Climate-Resilient Cities of the Future","California’s Future – Warmer, Drier and Wetter","Effects of Climate Uncertainty on the Development and Evaluation of Adaptation Strategies","Reexamination of Sediment Management in Newport Bay under Accelerating Sea-Level Rise","Use of Urban Vegetation As Climate Adaptation- Effective, and Low Cost When Done Well","Land Use Change, Fire, Cannabis","Erosion and Best Management Practices after Forest Fire","Drinking Water Quality Impacts of Watershed Fires: A Case Study","Panel Discussion: How to address water quality monitoring problems associated with fire?","Lightning Talks: Short presentations on innovative tech and special studies","Monitoring Bioaccumulation in California’s Changing Landscapes","Remote Sensing of Cyanobacteria Abundance: Next Steps in Utilizing Satellite Imagery and Data","Statewide Contaminant and Toxicity Monitoring Related to Land Use","From Open Data to Open Indicators","A Vision for More Effective Use of Biological Data in Water Resource Management", "Prioritizing Management Goals for Stream Biological Integrity Within the Context of Landscape Constraints","Using an Interactive Dashboard to Communicate Bioassessment Data", "eDNA Methods and Application for several State and Federally Listed Aquatic Species", "Panel Discussion: What are the Water Data Needs to Address the Management Decisions Related to Landscape Change?","Data Story and Visualization Panel Discussion")),
+               sliderInput("rank", "Rank this talk from 0 to 5 with 5 being the best",0, 5,1, ticks = F),
+               radioButtons("interest", label = "The subject of this talk was of interest to me", choices = list("Strongly agree"=1, "Somewhat agree"=2, "Neutral"=3,"Somewhat disagree"=4,"Strongly disagree"=5)),
+               radioButtons("clarity", label = "The speaker did a good job of presenting information in an understandable way", choices = list("Strongly agree"=1, "Somewhat agree"=2, "Neutral"=3,"Somewhat disagree"=4,"Strongly disagree"=5)),
                actionButton("submit", "Submit", class = "btn-primary"),
                
                shinyjs::hidden(
@@ -69,11 +66,12 @@ Management", "Prioritizing Management Goals for Stream Biological Integrity With
     shinyjs::hidden(
       div(
         id = "thankyou_msg",
-        h3("Thanks, your response was submitted successfully!"),
+        h3("Thank you, your response was submitted successfully!"),
         actionLink("submit_another", "Submit another response")
       )
     )#close thank you message  
-  )#close row
+  #plotOutput('plot')
+    )#close row
 ),#close page
   
   server = function(input, output, session) {
@@ -126,12 +124,14 @@ Management", "Prioritizing Management Goals for Stream Biological Integrity With
     })
     
     
-    # Show the previous responses
-    # (update with current response when Submit is clicked)
-    output$responses <- DT::renderDataTable({
-      input$submit
-      loadData()
-    })     
+    # Plotting values
+    #values = reactiveValues(values = NULL)
+    #observeEvent(input$interest, {
+      #values$values <- read.csv(input$file$datapath)
+    #})
+    #output$plot <- renderPlot({
+    #  barplot(input$submit$interest)
+    #})     
   }
 )
 
