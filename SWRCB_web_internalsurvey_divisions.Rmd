@@ -1,0 +1,1258 @@
+---
+title: "State Water Board Web and Business Requirements Internal Survey - Division"
+author: "Office of Information Management and Analysis"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+  word_document: default
+  html_notenook: default
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, warning = F, message = F, fig.width = 6, fig.height = 4)
+```
+
+```{r, include = F}
+packages <- c('readxl',
+              'tidyverse',
+              'readr',
+              'data.table',
+              'dplyr',
+              'car',
+              'ggplot2',
+              'nortest',
+              'broom',
+              'lme4',
+              'magrittr',
+              'forcats',
+              'shiny')
+lapply(packages, require, character.only = T)
+```
+
+```{r}
+survey = read_csv("C:/Users/NHack/Water-board.git/Web Team - Internal Survey (Responses) - Form Responses 1.csv")
+survey$publishORcollectContent = as.factor(survey$publishORcollectContent)
+levels(survey$publishORcollectContent) = c('Collect Content', 'Publish Content', 'Both')
+survey = dplyr::mutate(survey, acron = car::recode(division,"
+                                                   'Division of Water Rights'= 'DWR';
+                                                   'Division of Drinking Water' = 'DDW';
+                                                   'Office of Research, Planning & Performance' = 'ORPP';
+                                                   'Division of Administrative Services'= 'DAS';
+                                                   'Office of the Delta Water Master' = 'ODWM';
+                                                   'Division of Financial Assistance' = 'DFA';
+                                                   'Office of Information Management & Analysis'= 'OIMA';
+                                                   'EEO' = 'EEO';
+                                                   'Office of Public Participation' = 'OPP';
+                                                   'Division of Water Quality - Surface Water Regulatory Branch' = 'DWQ'"))
+
+#Load division summary to merge with survey data
+divison_summary <- read_excel("~/divison_summary.xlsx")
+```
+
+
+#DAS
+
+```{r}
+splitsurvey = split(survey, survey$acron) 
+surveynames = unique(survey$acron)
+DAS = as.data.frame(splitsurvey[1])
+```
+
+
+##In your program(s), do you use use the web site to publish content, collect content, or both?
+
+```{r}
+ggplot(DAS, aes(x = DAS.publishORcollectContent))+
+  geom_bar(fill = '#F97564')+
+  xlab('')+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  ylab('Number of Participants')+
+  theme(legend.title = element_blank())
+```
+
+##Identify the types and locations of content posted by your program(s). 
+
+```{r}
+ggplot(filter(locationsbyweb, acron == 'DAS'), aes(x = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
+  geom_bar(fill = '#F97564')+
+  ylab('Number of Programs')+
+  guides(fill = guide_legend(title = 'Web Page'))+
+  coord_flip()+
+  scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank())
+```
+
+
+
+```{r}
+ggplot(filter(locationsbyweb, acron == 'DAS'), aes(x = Document, fill = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
+  geom_bar()+
+  ylab('Number of Participants')+
+  guides(fill = guide_legend(title = 'Web Page'))+
+  coord_flip()+
+  scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank())
+```
+
+##What are the most applicable core business use categories for the web page(s) used by your program(s)?
+
+```{r}
+ggplot(dplyr::filter(surveyFunction, acron == 'DAS'), aes(x = fct_infreq(MainCat)))+
+  geom_bar(fill = '#F97564')+
+  ylab('Count')+
+  guides(fill = guide_legend(title = ''))+
+  coord_flip()+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+##Who are the target audiences for the web pages used by your program?
+
+```{r}
+ggplot(dplyr::filter(audience, acron == 'DAS'), aes(x = fct_infreq(Audience)))+
+  geom_bar(fill = '#F97564')+
+  ylab('Count')+
+  guides(fill = guide_legend(title = ''))+
+  coord_flip()+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+##How frequently is content updated from your program(s)?
+
+```{r}
+ggplot(dplyr::filter(survey, acron == 'DAS'), aes(x = sort(ContentUpdate)))+
+  geom_bar(fill = '#F97564')+
+  ylab('Count')+
+  xlab('Divisions & Offices')+
+  guides(fill = guide_legend(title = ''))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+##Participants
+
+```{r}
+DASex = dplyr::filter(survey, acron == 'DAS') %>% dplyr::select(name, programs, WebsiteCreation, ContentTools, website, WebsiteExplanation)
+knitr::kable(DASex[1])
+```
+
+##Describe, in general terms, the process by which your program web pages are developed, updated, and approved for submission to the DIT Web Unit.
+
+```{r}
+knitr::kable(DASex$WebsiteCreation)
+```
+
+##Describe, in general terms, any processes or tools utilized to keep content relevant and current.
+
+```{r}
+knitr::kable(DASex[4])
+```
+
+##Provide a web address of a page from your program that you feel best demonstrates your program’s ability to use the web to meet your business requirements.
+
+```{r}
+knitr::kable(DASex[5])
+```
+
+##Briefly tell us why you selected that web page.
+ 
+```{r}
+knitr::kable(DASex[6])
+```
+
+
+----
+
+#DDW
+
+```{r}
+DDW = as.data.frame(splitsurvey[2])
+```
+
+
+##In your program(s), do you use use the web site to publish content, collect content, or both?
+
+```{r}
+ggplot(DDW, aes(x = DDW.publishORcollectContent))+
+  geom_bar(fill = '#DA8E02')+
+  xlab('')+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  ylab('Number of Participants')+
+  theme(legend.title = element_blank())
+```
+
+##Identify the types and locations of content posted by your program(s). 
+
+```{r}
+ggplot(filter(locationsbyweb, acron == 'DDW'), aes(x = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
+  geom_bar(fill = '#DA8E02')+
+  ylab('Number of Programs')+
+  guides(fill = guide_legend(title = 'Web Page'))+
+  coord_flip()+
+  scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank())
+```
+
+
+
+```{r}
+ggplot(filter(locationsbyweb, acron == 'DDW'), aes(x = Document, fill = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
+  geom_bar()+
+  ylab('Number of Participants')+
+  guides(fill = guide_legend(title = 'Web Page'))+
+  coord_flip()+
+  scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank())
+```
+
+##What are the most applicable core business use categories for the web page(s) used by your program(s)?
+
+```{r}
+ggplot(dplyr::filter(surveyFunction, acron == 'DDW'), aes(x = fct_infreq(MainCat)))+
+  geom_bar(fill = '#DA8E02')+
+  ylab('Count')+
+  guides(fill = guide_legend(title = ''))+
+  coord_flip()+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+##Who are the target audiences for the web pages used by your program?
+
+```{r}
+ggplot(dplyr::filter(audience, acron == 'DDW'), aes(x = fct_infreq(Audience)))+
+  geom_bar(fill = '#DA8E02')+
+  ylab('Count')+
+  guides(fill = guide_legend(title = ''))+
+  coord_flip()+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+##How frequently is content updated from your program(s)?
+
+```{r}
+ggplot(dplyr::filter(survey, acron == 'DDW'), aes(x = sort(ContentUpdate)))+
+  geom_bar(fill = '#DA8E02')+
+  ylab('Count')+
+  xlab('Divisions & Offices')+
+  guides(fill = guide_legend(title = ''))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+
+##Participants
+
+```{r}
+DDWex = dplyr::filter(survey, acron == 'DDW') %>% dplyr::select(name, programs, WebsiteCreation, ContentTools, website, WebsiteExplanation)
+knitr::kable(DDWex[1])
+```
+
+##Describe, in general terms, the process by which your program web pages are developed, updated, and approved for submission to the DIT Web Unit.
+
+```{r}
+knitr::kable(DDWex$WebsiteCreation)
+```
+
+##Describe, in general terms, any processes or tools utilized to keep content relevant and current.
+
+```{r}
+knitr::kable(DDWex[4])
+```
+
+##Provide a web address of a page from your program that you feel best demonstrates your program’s ability to use the web to meet your business requirements.
+
+```{r}
+knitr::kable(DDWex[5])
+```
+
+##Briefly tell us why you selected that web page.
+ 
+```{r}
+knitr::kable(DDWex[6])
+```
+
+
+----
+
+#DFA
+
+```{r}
+DFA = as.data.frame(splitsurvey[3])
+```
+
+
+##In your program(s), do you use use the web site to publish content, collect content, or both?
+
+```{r}
+ggplot(DFA, aes(x = DFA.publishORcollectContent))+
+  geom_bar(fill = '#A4A408')+
+  xlab('')+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  ylab('Number of Participants')+
+  theme(legend.title = element_blank())
+```
+
+##Identify the types and locations of content posted by your program(s). 
+
+```{r}
+ggplot(filter(locationsbyweb, acron == 'DFA'), aes(x = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
+  geom_bar(fill = '#A4A408')+
+  ylab('Number of Programs')+
+  guides(fill = guide_legend(title = 'Web Page'))+
+  coord_flip()+
+  scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank())
+```
+
+
+
+```{r}
+ggplot(filter(locationsbyweb, acron == 'DFA'), aes(x = Document, fill = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
+  geom_bar()+
+  ylab('Number of Participants')+
+  guides(fill = guide_legend(title = 'Web Page'))+
+  coord_flip()+
+  scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank())
+```
+
+##What are the most applicable core business use categories for the web page(s) used by your program(s)?
+
+```{r}
+ggplot(dplyr::filter(surveyFunction, acron == 'DFA'), aes(x = fct_infreq(MainCat)))+
+  geom_bar(fill = '#A4A408')+
+  ylab('Count')+
+  guides(fill = guide_legend(title = ''))+
+  coord_flip()+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+##Who are the target audiences for the web pages used by your program?
+
+```{r}
+ggplot(dplyr::filter(audience, acron == 'DFA'), aes(x = fct_infreq(Audience)))+
+  geom_bar(fill = '#A4A408')+
+  ylab('Count')+
+  guides(fill = guide_legend(title = ''))+
+  coord_flip()+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+##How frequently is content updated from your program(s)?
+
+```{r}
+ggplot(dplyr::filter(survey, acron == 'DFA'), aes(x = sort(ContentUpdate)))+
+  geom_bar(fill = '#A4A408')+
+  ylab('Count')+
+  xlab('Divisions & Offices')+
+  guides(fill = guide_legend(title = ''))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+##Participants
+
+```{r}
+DFAex = dplyr::filter(survey, acron == 'DFA') %>% dplyr::select(name, programs, WebsiteCreation, ContentTools, website, WebsiteExplanation)
+knitr::kable(DFAex[1])
+```
+
+##Describe, in general terms, the process by which your program web pages are developed, updated, and approved for submission to the DIT Web Unit.
+
+```{r}
+knitr::kable(DFAex$WebsiteCreation)
+```
+
+##Describe, in general terms, any processes or tools utilized to keep content relevant and current.
+
+```{r}
+knitr::kable(DFAex[4])
+```
+
+##Provide a web address of a page from your program that you feel best demonstrates your program’s ability to use the web to meet your business requirements.
+
+```{r}
+knitr::kable(DFAex[5])
+```
+
+##Briefly tell us why you selected that web page.
+ 
+```{r}
+knitr::kable(DFAex[6])
+```
+
+
+
+----
+
+#DWQ
+
+```{r}
+DWQ = as.data.frame(splitsurvey[4])
+```
+
+
+##In your program(s), do you use use the web site to publish content, collect content, or both?
+
+```{r}
+ggplot(DWQ, aes(x = DWQ.publishORcollectContent))+
+  geom_bar(fill = '#3CB602')+
+  xlab('')+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  ylab('Number of Participants')+
+  theme(legend.title = element_blank())
+```
+
+##Identify the types and locations of content posted by your program(s). 
+
+```{r}
+ggplot(filter(locationsbyweb, acron == 'DWQ'), aes(x = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
+  geom_bar(fill = '#3CB602')+
+  ylab('Number of Programs')+
+  guides(fill = guide_legend(title = 'Web Page'))+
+  coord_flip()+
+  scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank())
+```
+
+
+
+```{r}
+ggplot(filter(locationsbyweb, acron == 'DWQ'), aes(x = Document, fill = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
+  geom_bar()+
+  ylab('Number of Participants')+
+  guides(fill = guide_legend(title = 'Web Page'))+
+  coord_flip()+
+  scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank())
+```
+
+##What are the most applicable core business use categories for the web page(s) used by your program(s)?
+
+```{r}
+ggplot(dplyr::filter(surveyFunction, acron == 'DWQ'), aes(x = fct_infreq(MainCat)))+
+  geom_bar(fill = '#3CB602')+
+  ylab('Count')+
+  guides(fill = guide_legend(title = ''))+
+  coord_flip()+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+##Who are the target audiences for the web pages used by your program?
+
+```{r}
+ggplot(dplyr::filter(audience, acron == 'DWQ'), aes(x = fct_infreq(Audience)))+
+  geom_bar(fill = '#3CB602')+
+  ylab('Count')+
+  guides(fill = guide_legend(title = ''))+
+  coord_flip()+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+##How frequently is content updated from your program(s)?
+
+```{r}
+ggplot(dplyr::filter(survey, acron == 'DWQ'), aes(x = sort(ContentUpdate)))+
+  geom_bar(fill = '#3CB602')+
+  ylab('Count')+
+  xlab('Divisions & Offices')+
+  guides(fill = guide_legend(title = ''))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+
+##Participants
+
+```{r}
+DWQex = dplyr::filter(survey, acron == 'DWQ') %>% dplyr::select(name, programs, WebsiteCreation, ContentTools, website, WebsiteExplanation)
+knitr::kable(DWQex[1])
+```
+
+##Describe, in general terms, the process by which your program web pages are developed, updated, and approved for submission to the DIT Web Unit.
+
+```{r}
+knitr::kable(DWQex$WebsiteCreation)
+```
+
+##Describe, in general terms, any processes or tools utilized to keep content relevant and current.
+
+```{r}
+knitr::kable(DWQex[4])
+```
+
+##Provide a web address of a page from your program that you feel best demonstrates your program’s ability to use the web to meet your business requirements.
+
+```{r}
+knitr::kable(DWQex[5])
+```
+
+##Briefly tell us why you selected that web page.
+ 
+```{r}
+knitr::kable(DWQex[6])
+```
+
+
+----
+
+#DWR
+
+```{r}
+DWR = as.data.frame(splitsurvey[5])
+```
+
+
+##In your program(s), do you use use the web site to publish content, collect content, or both?
+
+```{r}
+ggplot(DWR, aes(x = DWR.publishORcollectContent))+
+  geom_bar(fill = '#01C177')+
+  xlab('')+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  ylab('Number of Participants')+
+  theme(legend.title = element_blank())
+```
+
+##Identify the types and locations of content posted by your program(s). 
+
+```{r}
+ggplot(filter(locationsbyweb, acron == 'DWR'), aes(x = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
+  geom_bar(fill = '#01C177')+
+  ylab('Number of Programs')+
+  guides(fill = guide_legend(title = 'Web Page'))+
+  coord_flip()+
+  scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank())
+```
+
+
+
+```{r}
+ggplot(filter(locationsbyweb, acron == 'DWR'), aes(x = Document, fill = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
+  geom_bar()+
+  ylab('Number of Participants')+
+  guides(fill = guide_legend(title = 'Web Page'))+
+  coord_flip()+
+  scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank())
+```
+
+##What are the most applicable core business use categories for the web page(s) used by your program(s)?
+
+```{r}
+ggplot(dplyr::filter(surveyFunction, acron == 'DWR'), aes(x = fct_infreq(MainCat)))+
+  geom_bar(fill = '#01C177')+
+  ylab('Count')+
+  guides(fill = guide_legend(title = ''))+
+  coord_flip()+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+##Who are the target audiences for the web pages used by your program?
+
+```{r}
+ggplot(dplyr::filter(audience, acron == 'DWR'), aes(x = fct_infreq(Audience)))+
+  geom_bar(fill = '#01C177')+
+  ylab('Count')+
+  guides(fill = guide_legend(title = ''))+
+  coord_flip()+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+##How frequently is content updated from your program(s)?
+
+```{r}
+ggplot(dplyr::filter(survey, acron == 'DWR'), aes(x = sort(ContentUpdate)))+
+  geom_bar(fill = '#01C177')+
+  ylab('Count')+
+  xlab('Divisions & Offices')+
+  guides(fill = guide_legend(title = ''))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+
+##Participants
+
+```{r}
+DWRex = dplyr::filter(survey, acron == 'DWR') %>% dplyr::select(name, programs, WebsiteCreation, ContentTools, website, WebsiteExplanation)
+knitr::kable(DWRex[1])
+```
+
+##Describe, in general terms, the process by which your program web pages are developed, updated, and approved for submission to the DIT Web Unit.
+
+```{r}
+knitr::kable(DWRex$WebsiteCreation)
+```
+
+##Describe, in general terms, any processes or tools utilized to keep content relevant and current.
+
+```{r}
+knitr::kable(DWRex[4])
+```
+
+##Provide a web address of a page from your program that you feel best demonstrates your program’s ability to use the web to meet your business requirements.
+
+```{r}
+knitr::kable(DWRex[5])
+```
+
+##Briefly tell us why you selected that web page.
+ 
+```{r}
+knitr::kable(DWRex[6])
+```
+
+
+
+----
+
+#EEO
+
+```{r}
+EEO = as.data.frame(splitsurvey[6])
+```
+
+
+##In your program(s), do you use use the web site to publish content, collect content, or both?
+
+```{r}
+ggplot(EEO, aes(x = EEO.publishORcollectContent))+
+  geom_bar(fill = '#06BBBF')+
+  xlab('')+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  ylab('Number of Participants')+
+  theme(legend.title = element_blank())
+```
+
+##Identify the types and locations of content posted by your program(s). 
+
+```{r}
+ggplot(filter(locationsbyweb, acron == 'EEO'), aes(x = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
+  geom_bar(fill = '#06BBBF')+
+  ylab('Number of Programs')+
+  guides(fill = guide_legend(title = 'Web Page'))+
+  coord_flip()+
+  scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank())
+```
+
+
+
+```{r}
+ggplot(filter(locationsbyweb, acron == 'EEO'), aes(x = Document, fill = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
+  geom_bar()+
+  ylab('Number of Participants')+
+  guides(fill = guide_legend(title = 'Web Page'))+
+  coord_flip()+
+  scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank())
+```
+
+##What are the most applicable core business use categories for the web page(s) used by your program(s)?
+
+```{r}
+ggplot(dplyr::filter(surveyFunction, acron == 'EEO'), aes(x = fct_infreq(MainCat)))+
+  geom_bar(fill = '#06BBBF')+
+  ylab('Count')+
+  guides(fill = guide_legend(title = ''))+
+  coord_flip()+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+##Who are the target audiences for the web pages used by your program?
+
+```{r}
+ggplot(dplyr::filter(audience, acron == 'EEO'), aes(x = fct_infreq(Audience)))+
+  geom_bar(fill = '#06BBBF')+
+  ylab('Count')+
+  guides(fill = guide_legend(title = ''))+
+  coord_flip()+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+##How frequently is content updated from your program(s)?
+
+```{r}
+ggplot(dplyr::filter(survey, acron == 'EEO'), aes(x = sort(ContentUpdate)))+
+  geom_bar(fill = '#06BBBF')+
+  ylab('Count')+
+  xlab('Divisions & Offices')+
+  guides(fill = guide_legend(title = ''))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+
+##Participants
+
+```{r}
+EEOex = dplyr::filter(survey, acron == 'EEO') %>% dplyr::select(name, programs, WebsiteCreation, ContentTools, website, WebsiteExplanation)
+knitr::kable(EEOex[1])
+```
+
+##Describe, in general terms, the process by which your program web pages are developed, updated, and approved for submission to the DIT Web Unit.
+
+```{r}
+knitr::kable(EEOex$WebsiteCreation)
+```
+
+##Describe, in general terms, any processes or tools utilized to keep content relevant and current.
+
+```{r}
+knitr::kable(EEOex[4])
+```
+
+##Provide a web address of a page from your program that you feel best demonstrates your program’s ability to use the web to meet your business requirements.
+
+```{r}
+knitr::kable(EEOex[5])
+```
+
+##Briefly tell us why you selected that web page.
+ 
+```{r}
+knitr::kable(EEOex[6])
+```
+
+
+
+----
+
+#ODWM
+
+```{r}
+ODWM = as.data.frame(splitsurvey[7])
+```
+
+
+##In your program(s), do you use use the web site to publish content, collect content, or both?
+
+```{r}
+ggplot(ODWM, aes(x = ODWM.publishORcollectContent))+
+  geom_bar(fill = '#00B1F9')+
+  xlab('')+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  ylab('Number of Participants')+
+  theme(legend.title = element_blank())
+```
+
+##Identify the types and locations of content posted by your program(s). 
+
+```{r}
+ggplot(filter(locationsbyweb, acron == 'ODWM'), aes(x = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
+  geom_bar(fill = '#00B1F9')+
+  ylab('Number of Programs')+
+  guides(fill = guide_legend(title = 'Web Page'))+
+  coord_flip()+
+  scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank())
+```
+
+
+
+```{r}
+ggplot(filter(locationsbyweb, acron == 'ODWM'), aes(x = Document, fill = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
+  geom_bar()+
+  ylab('Number of Participants')+
+  guides(fill = guide_legend(title = 'Web Page'))+
+  coord_flip()+
+  scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank())
+```
+
+##What are the most applicable core business use categories for the web page(s) used by your program(s)?
+
+```{r}
+ggplot(dplyr::filter(surveyFunction, acron == 'ODWM'), aes(x = fct_infreq(MainCat)))+
+  geom_bar(fill = '#00B1F9')+
+  ylab('Count')+
+  guides(fill = guide_legend(title = ''))+
+  coord_flip()+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+##Who are the target audiences for the web pages used by your program?
+
+```{r}
+ggplot(dplyr::filter(audience, acron == 'ODWM'), aes(x = fct_infreq(Audience)))+
+  geom_bar(fill = '#00B1F9')+
+  ylab('Count')+
+  guides(fill = guide_legend(title = ''))+
+  coord_flip()+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+##How frequently is content updated from your program(s)?
+
+```{r}
+ggplot(dplyr::filter(survey, acron == 'ODWM'), aes(x = sort(ContentUpdate)))+
+  geom_bar(fill = '#00B1F9')+
+  ylab('Count')+
+  xlab('Divisions & Offices')+
+  guides(fill = guide_legend(title = ''))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+
+##Participants
+
+```{r}
+ODWMex = dplyr::filter(survey, acron == 'ODWM') %>% dplyr::select(name, programs, WebsiteCreation, ContentTools, website, WebsiteExplanation)
+knitr::kable(ODWMex[1])
+```
+
+##Describe, in general terms, the process by which your program web pages are developed, updated, and approved for submission to the DIT Web Unit.
+
+```{r}
+knitr::kable(ODWMex$WebsiteCreation)
+```
+
+##Describe, in general terms, any processes or tools utilized to keep content relevant and current.
+
+```{r}
+knitr::kable(ODWMex[4])
+```
+
+##Provide a web address of a page from your program that you feel best demonstrates your program’s ability to use the web to meet your business requirements.
+
+```{r}
+knitr::kable(ODWMex[5])
+```
+
+##Briefly tell us why you selected that web page.
+ 
+```{r}
+knitr::kable(ODWMex[6])
+```
+
+
+----
+
+#OIMA
+
+```{r}
+OIMA = as.data.frame(splitsurvey[8])
+```
+
+
+##In your program(s), do you use use the web site to publish content, collect content, or both?
+
+```{r}
+ggplot(OIMA, aes(x = OIMA.publishORcollectContent))+
+  geom_bar(fill = '#8E91FE')+
+  xlab('')+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  ylab('Number of Participants')+
+  theme(legend.title = element_blank())
+```
+
+##Identify the types and locations of content posted by your program(s). 
+
+```{r}
+ggplot(filter(locationsbyweb, acron == 'OIMA'), aes(x = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
+  geom_bar(fill = '#8E91FE')+
+  ylab('Number of Programs')+
+  guides(fill = guide_legend(title = 'Web Page'))+
+  coord_flip()+
+  scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank())
+```
+
+
+
+```{r}
+ggplot(filter(locationsbyweb, acron == 'OIMA'), aes(x = Document, fill = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
+  geom_bar()+
+  ylab('Number of Participants')+
+  guides(fill = guide_legend(title = 'Web Page'))+
+  coord_flip()+
+  scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank())
+```
+
+##What are the most applicable core business use categories for the web page(s) used by your program(s)?
+
+```{r}
+ggplot(dplyr::filter(surveyFunction, acron == 'OIMA'), aes(x = fct_infreq(MainCat)))+
+  geom_bar(fill = '#8E91FE')+
+  ylab('Count')+
+  guides(fill = guide_legend(title = ''))+
+  coord_flip()+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+##Who are the target audiences for the web pages used by your program?
+
+```{r}
+ggplot(dplyr::filter(audience, acron == 'OIMA'), aes(x = fct_infreq(Audience)))+
+  geom_bar(fill = '#8E91FE')+
+  ylab('Count')+
+  guides(fill = guide_legend(title = ''))+
+  coord_flip()+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+##How frequently is content updated from your program(s)?
+
+```{r}
+ggplot(dplyr::filter(survey, acron == 'OIMA'), aes(x = sort(ContentUpdate)))+
+  geom_bar(fill = '#8E91FE')+
+  ylab('Count')+
+  xlab('Divisions & Offices')+
+  guides(fill = guide_legend(title = ''))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+##Participants
+
+```{r}
+OIMAex = dplyr::filter(survey, acron == 'OIMA') %>% dplyr::select(name, programs, WebsiteCreation, ContentTools, website, WebsiteExplanation)
+knitr::kable(OIMAex[1])
+```
+
+##Describe, in general terms, the process by which your program web pages are developed, updated, and approved for submission to the DIT Web Unit.
+
+```{r}
+knitr::kable(OIMAex$WebsiteCreation)
+```
+
+##Describe, in general terms, any processes or tools utilized to keep content relevant and current.
+
+```{r}
+knitr::kable(OIMAex[4])
+```
+
+##Provide a web address of a page from your program that you feel best demonstrates your program’s ability to use the web to meet your business requirements.
+
+```{r}
+knitr::kable(OIMAex[5])
+```
+
+##Briefly tell us why you selected that web page.
+ 
+```{r}
+knitr::kable(OIMAex[6])
+```
+
+
+----
+
+#OPP
+
+```{r}
+OPP = as.data.frame(splitsurvey[9])
+```
+
+
+##In your program(s), do you use use the web site to publish content, collect content, or both?
+
+```{r}
+ggplot(OPP, aes(x = OPP.publishORcollectContent))+
+  geom_bar(fill = '#EC69F3')+
+  xlab('')+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  ylab('Number of Participants')+
+  theme(legend.title = element_blank())
+```
+
+##Identify the types and locations of content posted by your program(s). 
+
+```{r}
+ggplot(filter(locationsbyweb, acron == 'OPP'), aes(x = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
+  geom_bar(fill = '#EC69F3')+
+  ylab('Number of Programs')+
+  guides(fill = guide_legend(title = 'Web Page'))+
+  coord_flip()+
+  scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank())
+```
+
+
+
+```{r}
+ggplot(filter(locationsbyweb, acron == 'OPP'), aes(x = Document, fill = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
+  geom_bar()+
+  ylab('Number of Participants')+
+  guides(fill = guide_legend(title = 'Web Page'))+
+  coord_flip()+
+  scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank())
+```
+
+##What are the most applicable core business use categories for the web page(s) used by your program(s)?
+
+```{r}
+ggplot(dplyr::filter(surveyFunction, acron == 'OPP'), aes(x = fct_infreq(MainCat)))+
+  geom_bar(fill = '#EC69F3')+
+  ylab('Count')+
+  guides(fill = guide_legend(title = ''))+
+  coord_flip()+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+##Who are the target audiences for the web pages used by your program?
+
+```{r}
+ggplot(dplyr::filter(audience, acron == 'OPP'), aes(x = fct_infreq(Audience)))+
+  geom_bar(fill = '#EC69F3')+
+  ylab('Count')+
+  guides(fill = guide_legend(title = ''))+
+  coord_flip()+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+##How frequently is content updated from your program(s)?
+
+```{r}
+ggplot(dplyr::filter(survey, acron == 'OPP'), aes(x = sort(ContentUpdate)))+
+  geom_bar(fill = '#EC69F3')+
+  ylab('Count')+
+  xlab('Divisions & Offices')+
+  guides(fill = guide_legend(title = ''))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+##Participants
+
+```{r}
+OPPex = dplyr::filter(survey, acron == 'OPP') %>% dplyr::select(name, programs, WebsiteCreation, ContentTools, website, WebsiteExplanation)
+knitr::kable(OPPex[1])
+```
+
+##Describe, in general terms, the process by which your program web pages are developed, updated, and approved for submission to the DIT Web Unit.
+
+```{r}
+knitr::kable(OPPex$WebsiteCreation)
+```
+
+##Describe, in general terms, any processes or tools utilized to keep content relevant and current.
+
+```{r}
+knitr::kable(OPPex[4])
+```
+
+##Provide a web address of a page from your program that you feel best demonstrates your program’s ability to use the web to meet your business requirements.
+
+```{r}
+knitr::kable(OPPex[5])
+```
+
+##Briefly tell us why you selected that web page.
+ 
+```{r}
+knitr::kable(OPPex[6])
+```
+
+
+#ORPP
+
+```{r}
+ORPP = as.data.frame(splitsurvey[10])
+```
+
+
+##In your program(s), do you use use the web site to publish content, collect content, or both?
+
+```{r}
+ggplot(ORPP, aes(x = ORPP.publishORcollectContent))+
+  geom_bar(fill = '#FF5FC1')+
+  xlab('')+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  ylab('Number of Participants')+
+  theme(legend.title = element_blank())
+```
+
+##Identify the types and locations of content posted by your program(s). 
+
+```{r}
+ggplot(filter(locationsbyweb, acron == 'ORPP'), aes(x = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
+  geom_bar(fill = '#FF5FC1')+
+  ylab('Number of Programs')+
+  guides(fill = guide_legend(title = 'Web Page'))+
+  coord_flip()+
+  scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank())
+```
+
+
+
+```{r}
+ggplot(filter(locationsbyweb, acron == 'ORPP'), aes(x = Document, fill = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
+  geom_bar()+
+  ylab('Number of Participants')+
+  guides(fill = guide_legend(title = 'Web Page'))+
+  coord_flip()+
+  scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank())
+```
+
+##What are the most applicable core business use categories for the web page(s) used by your program(s)?
+
+```{r}
+ggplot(dplyr::filter(surveyFunction, acron == 'ORPP'), aes(x = fct_infreq(MainCat)))+
+  geom_bar(fill = '#FF5FC1')+
+  ylab('Count')+
+  guides(fill = guide_legend(title = ''))+
+  coord_flip()+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+##Who are the target audiences for the web pages used by your program?
+
+```{r}
+ggplot(dplyr::filter(audience, acron == 'ORPP'), aes(x = fct_infreq(Audience)))+
+  geom_bar(fill = '#FF5FC1')+
+  ylab('Count')+
+  guides(fill = guide_legend(title = ''))+
+  coord_flip()+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+##How frequently is content updated from your program(s)?
+
+```{r}
+ggplot(dplyr::filter(survey, acron == 'ORPP'), aes(x = sort(ContentUpdate)))+
+  geom_bar(fill = '#FF5FC1')+
+  ylab('Count')+
+  xlab('Divisions & Offices')+
+  guides(fill = guide_legend(title = ''))+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic(base_size=20)+
+  theme(plot.margin=unit(c(1,1,1.5,1.2),"cm"))
+```
+
+##Participants
+
+```{r}
+ORPPex = dplyr::filter(survey, acron == 'ORPP') %>% dplyr::select(name, programs, WebsiteCreation, ContentTools, website, WebsiteExplanation)
+knitr::kable(ORPPex[1])
+```
+
+##Describe, in general terms, the process by which your program web pages are developed, updated, and approved for submission to the DIT Web Unit.
+
+```{r}
+knitr::kable(ORPPex$WebsiteCreation)
+```
+
+##Describe, in general terms, any processes or tools utilized to keep content relevant and current.
+
+```{r}
+knitr::kable(ORPPex[4])
+```
+
+##Provide a web address of a page from your program that you feel best demonstrates your program’s ability to use the web to meet your business requirements.
+
+```{r}
+knitr::kable(ORPPex[5])
+```
+
+##Briefly tell us why you selected that web page.
+ 
+```{r}
+knitr::kable(ORPPex[6])
+```
+
