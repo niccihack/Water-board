@@ -10,7 +10,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = F, warning = F, message = F, fig.width = 6, fig.height = 4)
+knitr::opts_chunk$set(echo = F, warning = F, message = F, fig.width = 15.5, fig.height = 9)
 ```
 
 ```{r, include = F}
@@ -67,62 +67,101 @@ ggplot(DAS, aes(x = DAS.publishORcollectContent))+
   geom_bar(fill = '#F97564')+
   xlab('')+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   ylab('Number of Participants')+
   theme(legend.title = element_blank())
 ```
 
-##Identify the types and locations of content posted by your program(s). 
+##Identify the types of content posted by your program(s). 
 
 ```{r}
+locations = dplyr::select(survey,name,division, acron,programs,contains('Location'))
+locationsbyweb = tidyr::gather(locations, 'Document','Location',5:length(locations))
+locationsbyweb$Document = gsub('Location','',locationsbyweb$Document)
+levels(locationsbyweb$Location) = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A')
+
 ggplot(filter(locationsbyweb, acron == 'DAS'), aes(x = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
   geom_bar(fill = '#F97564')+
-  ylab('Number of Programs')+
-  guides(fill = guide_legend(title = 'Web Page'))+
+  ylab('Number of Participants')+
+  guides(fill = guide_legend(title = 'Web Page Location'))+
   coord_flip()+
   scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank())
 ```
 
-
+##Identify the locations of content posted by your program(s).
 
 ```{r}
 ggplot(filter(locationsbyweb, acron == 'DAS'), aes(x = Document, fill = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
   geom_bar()+
   ylab('Number of Participants')+
-  guides(fill = guide_legend(title = 'Web Page'))+
+  guides(fill = guide_legend(title = 'Web Page Location'))+
   coord_flip()+
   scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank())
 ```
 
 ##What are the most applicable core business use categories for the web page(s) used by your program(s)?
 
 ```{r}
+library(splitstackshape)
+surveyFunction = cSplit(survey,'Function', ',') %>%
+  tidyr::gather('FunNum','MainCat',28:length(.)) %>%
+  dplyr::select('name', 'division', 'acron','programs', 'MainCat')
+surveyFunction$MainCat = car::recode(surveyFunction$MainCat,"'Announcements' = 'Annoucements';
+              'Public Record (Orders' = 'Public Records';
+              'Coordination/Organizational Use (Agendas' = 'Coordination/Organizational Use';
+              'Achievements/ Work Products' = 'Achievements/ Work Products';
+              'Education & Training' = 'Education & Training';
+              'Outreach' = 'Outreach';
+              'Program Overview/Information' = 'Program Overview/Information';
+              'Repository/Library/Collection (of internally and externally developed resources and links)' = 'Repository';
+              else = NA")
+surveyFunction = surveyFunction[complete.cases(surveyFunction),]
+
 ggplot(dplyr::filter(surveyFunction, acron == 'DAS'), aes(x = fct_infreq(MainCat)))+
   geom_bar(fill = '#F97564')+
-  ylab('Count')+
+  ylab('Number of Participants')+
   guides(fill = guide_legend(title = ''))+
   coord_flip()+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
 ```
 
 ##Who are the target audiences for the web pages used by your program?
 
 ```{r}
+audience = survey %>% cSplit('audience', ',') %>%
+  tidyr::gather('Trash','Audience',28:length(.)) %>%
+  dplyr::select('name', 'division','acron', 'programs', 'Audience')
+audience$Audience = car::recode(audience$Audience,"
+'Internal Staff' = 'Internal Staff';
+'Private Industry (Ag' = 'Private Industry';
+'Non-Government Organizations (NGOs)' = 'Non-Government Organizations (NGOs)';
+'General Public' = 'General Public';
+'Businesses' = 'Businesses';
+'Municipalities' = 'Municipalities';
+'Management' = 'Management';
+'Other Agencies' = 'Other Agencies';
+'Tribes' = 'Tribes';
+'Citizen Scientists' = 'Citizen Scientists';
+'Certified operators' = 'Certified operators';
+'Retail and wholesale water suppliers throughout the state with an emphasis on 410 urban water suppliers.' = 'Water suppliers';
+else = NA")
+audience = audience[complete.cases(audience),]
+
 ggplot(dplyr::filter(audience, acron == 'DAS'), aes(x = fct_infreq(Audience)))+
   geom_bar(fill = '#F97564')+
-  ylab('Count')+
+  ylab('Number of Participants')+
   guides(fill = guide_legend(title = ''))+
   coord_flip()+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
 ```
 
@@ -131,11 +170,11 @@ ggplot(dplyr::filter(audience, acron == 'DAS'), aes(x = fct_infreq(Audience)))+
 ```{r}
 ggplot(dplyr::filter(survey, acron == 'DAS'), aes(x = sort(ContentUpdate)))+
   geom_bar(fill = '#F97564')+
-  ylab('Count')+
-  xlab('Divisions & Offices')+
+  ylab('Number of Participants')+
+  xlab('')+
   guides(fill = guide_legend(title = ''))+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(plot.margin=unit(c(1,1,1.5,1.2),"cm"))
 ```
 
@@ -187,36 +226,36 @@ ggplot(DDW, aes(x = DDW.publishORcollectContent))+
   geom_bar(fill = '#DA8E02')+
   xlab('')+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   ylab('Number of Participants')+
   theme(legend.title = element_blank())
 ```
 
-##Identify the types and locations of content posted by your program(s). 
+##Identify the types of content posted by your program(s). 
 
 ```{r}
 ggplot(filter(locationsbyweb, acron == 'DDW'), aes(x = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
   geom_bar(fill = '#DA8E02')+
-  ylab('Number of Programs')+
-  guides(fill = guide_legend(title = 'Web Page'))+
+  ylab('Number of Participants')+
+  guides(fill = guide_legend(title = 'Web Page Location'))+
   coord_flip()+
   scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank())
 ```
 
-
+##Identify the locations of content posted by your program(s).
 
 ```{r}
 ggplot(filter(locationsbyweb, acron == 'DDW'), aes(x = Document, fill = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
   geom_bar()+
   ylab('Number of Participants')+
-  guides(fill = guide_legend(title = 'Web Page'))+
+  guides(fill = guide_legend(title = 'Web Page Location'))+
   coord_flip()+
   scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank())
 ```
 
@@ -225,11 +264,11 @@ ggplot(filter(locationsbyweb, acron == 'DDW'), aes(x = Document, fill = factor(L
 ```{r}
 ggplot(dplyr::filter(surveyFunction, acron == 'DDW'), aes(x = fct_infreq(MainCat)))+
   geom_bar(fill = '#DA8E02')+
-  ylab('Count')+
+  ylab('Number of Participants')+
   guides(fill = guide_legend(title = ''))+
   coord_flip()+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
 ```
 
@@ -238,11 +277,11 @@ ggplot(dplyr::filter(surveyFunction, acron == 'DDW'), aes(x = fct_infreq(MainCat
 ```{r}
 ggplot(dplyr::filter(audience, acron == 'DDW'), aes(x = fct_infreq(Audience)))+
   geom_bar(fill = '#DA8E02')+
-  ylab('Count')+
+  ylab('Number of Participants')+
   guides(fill = guide_legend(title = ''))+
   coord_flip()+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
 ```
 
@@ -251,11 +290,11 @@ ggplot(dplyr::filter(audience, acron == 'DDW'), aes(x = fct_infreq(Audience)))+
 ```{r}
 ggplot(dplyr::filter(survey, acron == 'DDW'), aes(x = sort(ContentUpdate)))+
   geom_bar(fill = '#DA8E02')+
-  ylab('Count')+
-  xlab('Divisions & Offices')+
+  ylab('Number of Participants')+
+  xlab('')+
   guides(fill = guide_legend(title = ''))+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(plot.margin=unit(c(1,1,1.5,1.2),"cm"))
 ```
 
@@ -308,36 +347,36 @@ ggplot(DFA, aes(x = DFA.publishORcollectContent))+
   geom_bar(fill = '#A4A408')+
   xlab('')+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   ylab('Number of Participants')+
   theme(legend.title = element_blank())
 ```
 
-##Identify the types and locations of content posted by your program(s). 
+##Identify the types of content posted by your program(s). 
 
 ```{r}
 ggplot(filter(locationsbyweb, acron == 'DFA'), aes(x = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
   geom_bar(fill = '#A4A408')+
-  ylab('Number of Programs')+
-  guides(fill = guide_legend(title = 'Web Page'))+
+  ylab('Number of Participants')+
+  guides(fill = guide_legend(title = 'Web Page Location'))+
   coord_flip()+
   scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank())
 ```
 
-
+##Identify the locations of content posted by your program(s).
 
 ```{r}
 ggplot(filter(locationsbyweb, acron == 'DFA'), aes(x = Document, fill = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
   geom_bar()+
   ylab('Number of Participants')+
-  guides(fill = guide_legend(title = 'Web Page'))+
+  guides(fill = guide_legend(title = 'Web Page Location'))+
   coord_flip()+
   scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank())
 ```
 
@@ -346,11 +385,11 @@ ggplot(filter(locationsbyweb, acron == 'DFA'), aes(x = Document, fill = factor(L
 ```{r}
 ggplot(dplyr::filter(surveyFunction, acron == 'DFA'), aes(x = fct_infreq(MainCat)))+
   geom_bar(fill = '#A4A408')+
-  ylab('Count')+
+  ylab('Number of Participants')+
   guides(fill = guide_legend(title = ''))+
   coord_flip()+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
 ```
 
@@ -359,11 +398,11 @@ ggplot(dplyr::filter(surveyFunction, acron == 'DFA'), aes(x = fct_infreq(MainCat
 ```{r}
 ggplot(dplyr::filter(audience, acron == 'DFA'), aes(x = fct_infreq(Audience)))+
   geom_bar(fill = '#A4A408')+
-  ylab('Count')+
+  ylab('Number of Participants')+
   guides(fill = guide_legend(title = ''))+
   coord_flip()+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
 ```
 
@@ -372,11 +411,11 @@ ggplot(dplyr::filter(audience, acron == 'DFA'), aes(x = fct_infreq(Audience)))+
 ```{r}
 ggplot(dplyr::filter(survey, acron == 'DFA'), aes(x = sort(ContentUpdate)))+
   geom_bar(fill = '#A4A408')+
-  ylab('Count')+
-  xlab('Divisions & Offices')+
+  ylab('Number of Participants')+
+  xlab('')+
   guides(fill = guide_legend(title = ''))+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(plot.margin=unit(c(1,1,1.5,1.2),"cm"))
 ```
 
@@ -429,36 +468,36 @@ ggplot(DWQ, aes(x = DWQ.publishORcollectContent))+
   geom_bar(fill = '#3CB602')+
   xlab('')+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   ylab('Number of Participants')+
   theme(legend.title = element_blank())
 ```
 
-##Identify the types and locations of content posted by your program(s). 
+##Identify the types of content posted by your program(s). 
 
 ```{r}
 ggplot(filter(locationsbyweb, acron == 'DWQ'), aes(x = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
   geom_bar(fill = '#3CB602')+
-  ylab('Number of Programs')+
-  guides(fill = guide_legend(title = 'Web Page'))+
+  ylab('Number of Participants')+
+  guides(fill = guide_legend(title = 'Web Page Location'))+
   coord_flip()+
   scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank())
 ```
 
-
+##Identify the locations of content posted by your program(s).
 
 ```{r}
 ggplot(filter(locationsbyweb, acron == 'DWQ'), aes(x = Document, fill = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
   geom_bar()+
   ylab('Number of Participants')+
-  guides(fill = guide_legend(title = 'Web Page'))+
+  guides(fill = guide_legend(title = 'Web Page Location'))+
   coord_flip()+
   scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank())
 ```
 
@@ -467,11 +506,11 @@ ggplot(filter(locationsbyweb, acron == 'DWQ'), aes(x = Document, fill = factor(L
 ```{r}
 ggplot(dplyr::filter(surveyFunction, acron == 'DWQ'), aes(x = fct_infreq(MainCat)))+
   geom_bar(fill = '#3CB602')+
-  ylab('Count')+
+  ylab('Number of Participants')+
   guides(fill = guide_legend(title = ''))+
   coord_flip()+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
 ```
 
@@ -480,11 +519,11 @@ ggplot(dplyr::filter(surveyFunction, acron == 'DWQ'), aes(x = fct_infreq(MainCat
 ```{r}
 ggplot(dplyr::filter(audience, acron == 'DWQ'), aes(x = fct_infreq(Audience)))+
   geom_bar(fill = '#3CB602')+
-  ylab('Count')+
+  ylab('Number of Participants')+
   guides(fill = guide_legend(title = ''))+
   coord_flip()+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
 ```
 
@@ -493,11 +532,11 @@ ggplot(dplyr::filter(audience, acron == 'DWQ'), aes(x = fct_infreq(Audience)))+
 ```{r}
 ggplot(dplyr::filter(survey, acron == 'DWQ'), aes(x = sort(ContentUpdate)))+
   geom_bar(fill = '#3CB602')+
-  ylab('Count')+
-  xlab('Divisions & Offices')+
+  ylab('Number of Participants')+
+  xlab('')+
   guides(fill = guide_legend(title = ''))+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(plot.margin=unit(c(1,1,1.5,1.2),"cm"))
 ```
 
@@ -550,36 +589,36 @@ ggplot(DWR, aes(x = DWR.publishORcollectContent))+
   geom_bar(fill = '#01C177')+
   xlab('')+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   ylab('Number of Participants')+
   theme(legend.title = element_blank())
 ```
 
-##Identify the types and locations of content posted by your program(s). 
+##Identify the types of content posted by your program(s). 
 
 ```{r}
 ggplot(filter(locationsbyweb, acron == 'DWR'), aes(x = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
   geom_bar(fill = '#01C177')+
-  ylab('Number of Programs')+
-  guides(fill = guide_legend(title = 'Web Page'))+
+  ylab('Number of Participants')+
+  guides(fill = guide_legend(title = 'Web Page Location'))+
   coord_flip()+
   scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank())
 ```
 
-
+##Identify the locations of content posted by your program(s).
 
 ```{r}
 ggplot(filter(locationsbyweb, acron == 'DWR'), aes(x = Document, fill = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
   geom_bar()+
   ylab('Number of Participants')+
-  guides(fill = guide_legend(title = 'Web Page'))+
+  guides(fill = guide_legend(title = 'Web Page Location'))+
   coord_flip()+
   scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank())
 ```
 
@@ -588,11 +627,11 @@ ggplot(filter(locationsbyweb, acron == 'DWR'), aes(x = Document, fill = factor(L
 ```{r}
 ggplot(dplyr::filter(surveyFunction, acron == 'DWR'), aes(x = fct_infreq(MainCat)))+
   geom_bar(fill = '#01C177')+
-  ylab('Count')+
+  ylab('Number of Participants')+
   guides(fill = guide_legend(title = ''))+
   coord_flip()+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
 ```
 
@@ -601,11 +640,11 @@ ggplot(dplyr::filter(surveyFunction, acron == 'DWR'), aes(x = fct_infreq(MainCat
 ```{r}
 ggplot(dplyr::filter(audience, acron == 'DWR'), aes(x = fct_infreq(Audience)))+
   geom_bar(fill = '#01C177')+
-  ylab('Count')+
+  ylab('Number of Participants')+
   guides(fill = guide_legend(title = ''))+
   coord_flip()+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
 ```
 
@@ -614,11 +653,11 @@ ggplot(dplyr::filter(audience, acron == 'DWR'), aes(x = fct_infreq(Audience)))+
 ```{r}
 ggplot(dplyr::filter(survey, acron == 'DWR'), aes(x = sort(ContentUpdate)))+
   geom_bar(fill = '#01C177')+
-  ylab('Count')+
-  xlab('Divisions & Offices')+
+  ylab('Number of Participants')+
+  xlab('')+
   guides(fill = guide_legend(title = ''))+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(plot.margin=unit(c(1,1,1.5,1.2),"cm"))
 ```
 
@@ -672,36 +711,36 @@ ggplot(EEO, aes(x = EEO.publishORcollectContent))+
   geom_bar(fill = '#06BBBF')+
   xlab('')+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   ylab('Number of Participants')+
   theme(legend.title = element_blank())
 ```
 
-##Identify the types and locations of content posted by your program(s). 
+##Identify the types of content posted by your program(s). 
 
 ```{r}
 ggplot(filter(locationsbyweb, acron == 'EEO'), aes(x = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
   geom_bar(fill = '#06BBBF')+
-  ylab('Number of Programs')+
-  guides(fill = guide_legend(title = 'Web Page'))+
+  ylab('Number of Participants')+
+  guides(fill = guide_legend(title = 'Web Page Location'))+
   coord_flip()+
   scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank())
 ```
 
-
+##Identify the locations of content posted by your program(s).
 
 ```{r}
 ggplot(filter(locationsbyweb, acron == 'EEO'), aes(x = Document, fill = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
   geom_bar()+
   ylab('Number of Participants')+
-  guides(fill = guide_legend(title = 'Web Page'))+
+  guides(fill = guide_legend(title = 'Web Page Location'))+
   coord_flip()+
   scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank())
 ```
 
@@ -710,11 +749,11 @@ ggplot(filter(locationsbyweb, acron == 'EEO'), aes(x = Document, fill = factor(L
 ```{r}
 ggplot(dplyr::filter(surveyFunction, acron == 'EEO'), aes(x = fct_infreq(MainCat)))+
   geom_bar(fill = '#06BBBF')+
-  ylab('Count')+
+  ylab('Number of Participants')+
   guides(fill = guide_legend(title = ''))+
   coord_flip()+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
 ```
 
@@ -723,11 +762,11 @@ ggplot(dplyr::filter(surveyFunction, acron == 'EEO'), aes(x = fct_infreq(MainCat
 ```{r}
 ggplot(dplyr::filter(audience, acron == 'EEO'), aes(x = fct_infreq(Audience)))+
   geom_bar(fill = '#06BBBF')+
-  ylab('Count')+
+  ylab('Number of Participants')+
   guides(fill = guide_legend(title = ''))+
   coord_flip()+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
 ```
 
@@ -736,11 +775,11 @@ ggplot(dplyr::filter(audience, acron == 'EEO'), aes(x = fct_infreq(Audience)))+
 ```{r}
 ggplot(dplyr::filter(survey, acron == 'EEO'), aes(x = sort(ContentUpdate)))+
   geom_bar(fill = '#06BBBF')+
-  ylab('Count')+
-  xlab('Divisions & Offices')+
+  ylab('Number of Participants')+
+  xlab('')+
   guides(fill = guide_legend(title = ''))+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(plot.margin=unit(c(1,1,1.5,1.2),"cm"))
 ```
 
@@ -794,36 +833,36 @@ ggplot(ODWM, aes(x = ODWM.publishORcollectContent))+
   geom_bar(fill = '#00B1F9')+
   xlab('')+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   ylab('Number of Participants')+
   theme(legend.title = element_blank())
 ```
 
-##Identify the types and locations of content posted by your program(s). 
+##Identify the types of content posted by your program(s). 
 
 ```{r}
 ggplot(filter(locationsbyweb, acron == 'ODWM'), aes(x = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
   geom_bar(fill = '#00B1F9')+
-  ylab('Number of Programs')+
-  guides(fill = guide_legend(title = 'Web Page'))+
+  ylab('Number of Participants')+
+  guides(fill = guide_legend(title = 'Web Page Location'))+
   coord_flip()+
   scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank())
 ```
 
-
+##Identify the locations of content posted by your program(s).
 
 ```{r}
 ggplot(filter(locationsbyweb, acron == 'ODWM'), aes(x = Document, fill = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
   geom_bar()+
   ylab('Number of Participants')+
-  guides(fill = guide_legend(title = 'Web Page'))+
+  guides(fill = guide_legend(title = 'Web Page Location'))+
   coord_flip()+
   scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank())
 ```
 
@@ -832,11 +871,11 @@ ggplot(filter(locationsbyweb, acron == 'ODWM'), aes(x = Document, fill = factor(
 ```{r}
 ggplot(dplyr::filter(surveyFunction, acron == 'ODWM'), aes(x = fct_infreq(MainCat)))+
   geom_bar(fill = '#00B1F9')+
-  ylab('Count')+
+  ylab('Number of Participants')+
   guides(fill = guide_legend(title = ''))+
   coord_flip()+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
 ```
 
@@ -845,11 +884,11 @@ ggplot(dplyr::filter(surveyFunction, acron == 'ODWM'), aes(x = fct_infreq(MainCa
 ```{r}
 ggplot(dplyr::filter(audience, acron == 'ODWM'), aes(x = fct_infreq(Audience)))+
   geom_bar(fill = '#00B1F9')+
-  ylab('Count')+
+  ylab('Number of Participants')+
   guides(fill = guide_legend(title = ''))+
   coord_flip()+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
 ```
 
@@ -858,11 +897,11 @@ ggplot(dplyr::filter(audience, acron == 'ODWM'), aes(x = fct_infreq(Audience)))+
 ```{r}
 ggplot(dplyr::filter(survey, acron == 'ODWM'), aes(x = sort(ContentUpdate)))+
   geom_bar(fill = '#00B1F9')+
-  ylab('Count')+
-  xlab('Divisions & Offices')+
+  ylab('Number of Participants')+
+  xlab('')+
   guides(fill = guide_legend(title = ''))+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(plot.margin=unit(c(1,1,1.5,1.2),"cm"))
 ```
 
@@ -915,36 +954,36 @@ ggplot(OIMA, aes(x = OIMA.publishORcollectContent))+
   geom_bar(fill = '#8E91FE')+
   xlab('')+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   ylab('Number of Participants')+
   theme(legend.title = element_blank())
 ```
 
-##Identify the types and locations of content posted by your program(s). 
+##Identify the types of content posted by your program(s). 
 
 ```{r}
 ggplot(filter(locationsbyweb, acron == 'OIMA'), aes(x = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
   geom_bar(fill = '#8E91FE')+
-  ylab('Number of Programs')+
-  guides(fill = guide_legend(title = 'Web Page'))+
+  ylab('Number of Participants')+
+  guides(fill = guide_legend(title = 'Web Page Location'))+
   coord_flip()+
   scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank())
 ```
 
-
+##Identify the locations of content posted by your program(s).
 
 ```{r}
 ggplot(filter(locationsbyweb, acron == 'OIMA'), aes(x = Document, fill = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
   geom_bar()+
   ylab('Number of Participants')+
-  guides(fill = guide_legend(title = 'Web Page'))+
+  guides(fill = guide_legend(title = 'Web Page Location'))+
   coord_flip()+
   scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank())
 ```
 
@@ -953,11 +992,11 @@ ggplot(filter(locationsbyweb, acron == 'OIMA'), aes(x = Document, fill = factor(
 ```{r}
 ggplot(dplyr::filter(surveyFunction, acron == 'OIMA'), aes(x = fct_infreq(MainCat)))+
   geom_bar(fill = '#8E91FE')+
-  ylab('Count')+
+  ylab('Number of Participants')+
   guides(fill = guide_legend(title = ''))+
   coord_flip()+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
 ```
 
@@ -966,11 +1005,11 @@ ggplot(dplyr::filter(surveyFunction, acron == 'OIMA'), aes(x = fct_infreq(MainCa
 ```{r}
 ggplot(dplyr::filter(audience, acron == 'OIMA'), aes(x = fct_infreq(Audience)))+
   geom_bar(fill = '#8E91FE')+
-  ylab('Count')+
+  ylab('Number of Participants')+
   guides(fill = guide_legend(title = ''))+
   coord_flip()+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
 ```
 
@@ -979,11 +1018,11 @@ ggplot(dplyr::filter(audience, acron == 'OIMA'), aes(x = fct_infreq(Audience)))+
 ```{r}
 ggplot(dplyr::filter(survey, acron == 'OIMA'), aes(x = sort(ContentUpdate)))+
   geom_bar(fill = '#8E91FE')+
-  ylab('Count')+
-  xlab('Divisions & Offices')+
+  ylab('Number of Participants')+
+  xlab('')+
   guides(fill = guide_legend(title = ''))+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(plot.margin=unit(c(1,1,1.5,1.2),"cm"))
 ```
 
@@ -1035,36 +1074,36 @@ ggplot(OPP, aes(x = OPP.publishORcollectContent))+
   geom_bar(fill = '#EC69F3')+
   xlab('')+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   ylab('Number of Participants')+
   theme(legend.title = element_blank())
 ```
 
-##Identify the types and locations of content posted by your program(s). 
+##Identify the types of content posted by your program(s). 
 
 ```{r}
 ggplot(filter(locationsbyweb, acron == 'OPP'), aes(x = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
   geom_bar(fill = '#EC69F3')+
-  ylab('Number of Programs')+
-  guides(fill = guide_legend(title = 'Web Page'))+
+  ylab('Number of Participants')+
+  guides(fill = guide_legend(title = 'Web Page Location'))+
   coord_flip()+
   scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank())
 ```
 
-
+##Identify the locations of content posted by your program(s).
 
 ```{r}
 ggplot(filter(locationsbyweb, acron == 'OPP'), aes(x = Document, fill = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
   geom_bar()+
   ylab('Number of Participants')+
-  guides(fill = guide_legend(title = 'Web Page'))+
+  guides(fill = guide_legend(title = 'Web Page Location'))+
   coord_flip()+
   scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank())
 ```
 
@@ -1073,11 +1112,11 @@ ggplot(filter(locationsbyweb, acron == 'OPP'), aes(x = Document, fill = factor(L
 ```{r}
 ggplot(dplyr::filter(surveyFunction, acron == 'OPP'), aes(x = fct_infreq(MainCat)))+
   geom_bar(fill = '#EC69F3')+
-  ylab('Count')+
+  ylab('Number of Participants')+
   guides(fill = guide_legend(title = ''))+
   coord_flip()+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
 ```
 
@@ -1086,11 +1125,11 @@ ggplot(dplyr::filter(surveyFunction, acron == 'OPP'), aes(x = fct_infreq(MainCat
 ```{r}
 ggplot(dplyr::filter(audience, acron == 'OPP'), aes(x = fct_infreq(Audience)))+
   geom_bar(fill = '#EC69F3')+
-  ylab('Count')+
+  ylab('Number of Participants')+
   guides(fill = guide_legend(title = ''))+
   coord_flip()+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
 ```
 
@@ -1099,11 +1138,11 @@ ggplot(dplyr::filter(audience, acron == 'OPP'), aes(x = fct_infreq(Audience)))+
 ```{r}
 ggplot(dplyr::filter(survey, acron == 'OPP'), aes(x = sort(ContentUpdate)))+
   geom_bar(fill = '#EC69F3')+
-  ylab('Count')+
-  xlab('Divisions & Offices')+
+  ylab('Number of Participants')+
+  xlab('')+
   guides(fill = guide_legend(title = ''))+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(plot.margin=unit(c(1,1,1.5,1.2),"cm"))
 ```
 
@@ -1153,36 +1192,36 @@ ggplot(ORPP, aes(x = ORPP.publishORcollectContent))+
   geom_bar(fill = '#FF5FC1')+
   xlab('')+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   ylab('Number of Participants')+
   theme(legend.title = element_blank())
 ```
 
-##Identify the types and locations of content posted by your program(s). 
+##Identify the types of content posted by your program(s). 
 
 ```{r}
 ggplot(filter(locationsbyweb, acron == 'ORPP'), aes(x = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
   geom_bar(fill = '#FF5FC1')+
-  ylab('Number of Programs')+
-  guides(fill = guide_legend(title = 'Web Page'))+
+  ylab('Number of Participants')+
+  guides(fill = guide_legend(title = 'Web Page Location'))+
   coord_flip()+
   scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank())
 ```
 
-
+##Identify the locations of content posted by your program(s).
 
 ```{r}
 ggplot(filter(locationsbyweb, acron == 'ORPP'), aes(x = Document, fill = factor(Location, levels = c('Both','State Water Board Home Page','Program Home and Sub-Page(s)','N/A'))))+
   geom_bar()+
   ylab('Number of Participants')+
-  guides(fill = guide_legend(title = 'Web Page'))+
+  guides(fill = guide_legend(title = 'Web Page Location'))+
   coord_flip()+
   scale_fill_manual(values = c('darkturquoise','Blue','forestgreen','Grey'))+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank())
 ```
 
@@ -1191,11 +1230,11 @@ ggplot(filter(locationsbyweb, acron == 'ORPP'), aes(x = Document, fill = factor(
 ```{r}
 ggplot(dplyr::filter(surveyFunction, acron == 'ORPP'), aes(x = fct_infreq(MainCat)))+
   geom_bar(fill = '#FF5FC1')+
-  ylab('Count')+
+  ylab('Number of Participants')+
   guides(fill = guide_legend(title = ''))+
   coord_flip()+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
 ```
 
@@ -1204,11 +1243,11 @@ ggplot(dplyr::filter(surveyFunction, acron == 'ORPP'), aes(x = fct_infreq(MainCa
 ```{r}
 ggplot(dplyr::filter(audience, acron == 'ORPP'), aes(x = fct_infreq(Audience)))+
   geom_bar(fill = '#FF5FC1')+
-  ylab('Count')+
+  ylab('Number of Participants')+
   guides(fill = guide_legend(title = ''))+
   coord_flip()+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(axis.title.y = element_blank(),plot.margin=unit(c(1,1,1.5,1.2),"cm"))
 ```
 
@@ -1217,11 +1256,11 @@ ggplot(dplyr::filter(audience, acron == 'ORPP'), aes(x = fct_infreq(Audience)))+
 ```{r}
 ggplot(dplyr::filter(survey, acron == 'ORPP'), aes(x = sort(ContentUpdate)))+
   geom_bar(fill = '#FF5FC1')+
-  ylab('Count')+
-  xlab('Divisions & Offices')+
+  ylab('Number of Participants')+
+  xlab('')+
   guides(fill = guide_legend(title = ''))+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic(base_size=20)+
+  theme_classic(base_size=27)+
   theme(plot.margin=unit(c(1,1,1.5,1.2),"cm"))
 ```
 

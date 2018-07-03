@@ -49,10 +49,6 @@ survey = dplyr::mutate(survey, acron = car::recode(division,"
 divison_summary <- read_excel("~/divison_summary.xlsx")
 ```
 
-
-
-Summary of divisions who participated in this survey.
-
 ```{r}
 sumsurvey = survey %>% dplyr::group_by(acron) %>%
   dplyr::summarise(Participants = n(), divnames = paste(name, collapse = ', '))
@@ -62,12 +58,13 @@ dat1 = left_join(divison_summary, sumsurvey, by = 'acron')
 
 A total of `r paste(nrow(sumsurvey) / nrow(dat1) * 100)`% of the divisions participated.
 
+Summary of divisions who participated in this survey.
 ```{r}
 sumstaff = survey %>% dplyr::group_by(acron) %>% dplyr::summarise(staffnum = sum(ceiling(Staffnum)),webhrs = sum(ceiling(hoursnum)))
 sumstaff$acron = reorder(sumstaff$acron, sumstaff$staffnum)
 dat2 = left_join(dat1, sumstaff, by ='acron') %>% mutate(percap = round(webhrs / staffnum, digits = 2))
 
-knitr::kable(sumsurvey)
+knitr::kable(dplyr::select(dat1, acron, Participants, divnames))
 
 ggplot(survey, aes(x = reorder(acron,Rank), fill = as.factor(Rank)))+
   ggtitle('Distribution of management levels of participants')+
