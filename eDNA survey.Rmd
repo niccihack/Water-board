@@ -1,0 +1,163 @@
+---
+title: "eDNA survey"
+author: "Nicole Hack"
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output:
+  word_document: default
+  html_notenook: default
+  pdf_document: default
+  html_document: default
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, warning = F, message = F, fig.width = 15.5, fig.height = 9)
+```
+
+```{r, include = F}
+packages <- c('readxl',
+              'tidyverse',
+              'readr',
+              'data.table',
+              'dplyr',
+              'car',
+              'ggplot2',
+              'nortest',
+              'broom',
+              'lme4',
+              'magrittr',
+              'forcats',
+              'shiny',
+              'ggmap',
+              'splitstackshape')
+lapply(packages, require, character.only = T)
+```
+
+```{r}
+eDNA <- read_csv("~/eDNA/eDNA questionnaire_pt2.csv")
+#rename columns
+names(eDNA) = c('Timestamp','email','name','sites','substrate','reference','organism','methods','methref','workgroup','issues')
+
+#separate each site
+dat1 = splitstackshape::cSplit(eDNA, 'sites', direction = 'long', drop = F)
+dat1$sites = as.character(dat1$sites)
+#need to find gps coordinates of all the sites 
+dat2 = ggmap::mutate_geocode(dat1, sites)
+
+```
+
+Making graphs of multiple choice data
+
+##Substrate
+
+```{r}
+#separate substrate 
+dat3 = splitstackshape::cSplit(eDNA, 'substrate', direction = 'long', sep = ';')
+#recode
+dat4 = dplyr::mutate(dat3, substratesimp = ifelse((dat3$substrate == 'Water' |
+                                                    dat3$substrate == 'Soil' |
+                                                    dat3$substrate == 'Sediment'),
+                     dat3$substrate, paste('Other')))
+ggplot(dat4, aes(fct_infreq(substratesimp)))+
+  geom_bar(fill = c('dodgerblue','chocolate4','tan','grey'))+
+  xlab('Substrate')+
+  ylab('Number of Participants')+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic()
+```
+
+##Please provide detail on your target organisms.
+
+```{r}
+#separate substrate 
+dat7 = splitstackshape::cSplit(eDNA, 'organism', direction = 'long', sep = ',') %>%
+  splitstackshape::cSplit('organism', direction = 'long', sep = ';')
+#recode
+dat8 = dplyr::mutate(dat7, group = case_when(
+  grepl('fish|smelt|trout|sturgeon|salmon|stickleback|steelhead|sculpin|minnow|goby|gill|Myxobolus cerebralis|Eulachon|lamprey|shark|ray', organism, ignore.case = T) ~ 'Fish',
+  grepl('frog|toad|salamander|newt|amphibians', organism, ignore.case = T) ~ 'Amphibians',
+  grepl('turtle|snake|lizard', organism, ignore.case = T) ~ 'Reptiles',
+  grepl('mussel|snail|Anodonta|Margaritifera falcata|Gonidea angulata', organism, ignore.case = T) ~ 'Mollusks',
+  grepl('human|mammals|swine|canine|bovine', organism, ignore.case = T) ~ 'Mammals',
+  grepl('microorganism|virus*|bacteria|archaea|protists|nova shasta|Bsal|Bd|coliforms|microbe|E. coli|Enterococcus|Bacteroides', organism, ignore.case = T) ~ 'Microorgansims',
+  grepl('algae', organism, ignore.case = T) ~ 'Algae',
+  grepl('shrimp|crayfish|branchiopods', organism, ignore.case = T) ~ 'Crustaceans',
+  grepl('birds|avian', organism, ignore.case = T) ~ 'Birds',
+  grepl('plants', organism, ignore.case = T) ~ 'Plants'
+))
+test = dplyr::select(dat8, organism, group)
+#must manually change 'crayfish' from fish to crustacean
+dat8[35,'group'] = paste('Crustaceans')
+
+drop_na(dat8, group) %>% ggplot(aes(fct_infreq(group)))+
+  geom_bar(fill = c("#56B4E9","darkgreen","#CC79A7", "#0072B2", 'chocolate4', "firebrick","olivedrab","slategrey", "olivedrab2","tan2"))+
+  xlab('Organism')+
+  ylab('Number of Participants')+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic()
+
+#make new column of invertebrate/vertebrate/both
+dat9 = dat8 %>% dplyr::mutate(vert = case_when(
+  grepl('Birds|Mammals|Reptiles|Amphibians|Fish', group) ~ 'Vertebrates',
+  grepl('invertebrate', organism, ignore.case = T) ~ 'Invertebrates',
+  grepl('Mollusks|Crustaceans',group) ~ 'Invertebrates',
+  grepl('vertebrate', organism, ignore.case = T) ~ 'Vertebrates',
+  TRUE ~ group
+)
+)
+
+#want to only have one entry per participant
+dat10 = dplyr::select(dat9, -organism, -group)
+dat10 = dat10[!duplicated(dat10),]
+
+drop_na(dat10, vert) %>% ggplot(aes(fct_infreq(vert)))+
+  geom_bar(fill = c( "#F0E442","#56B4E9","#CC79A7", "olivedrab2","tan2"))+
+  xlab('Organism')+
+  ylab('Number of Participants')+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic()
+```
+
+
+##How are you sequencing your eDNA sample? (check all that apply) 
+
+```{r}
+#separate methods
+dat5 = splitstackshape::cSplit(eDNA, 'methods', direction = 'long', sep = ';')
+#recode
+dat6 = dplyr::mutate(dat5, methodsimp = ifelse((dat5$methods == 'qPCR' |
+                                                    dat5$methods == 'Barcode sequencing' |
+                                                    dat5$methods == 'Metabarcode sequencing'),
+                     as.character(dat5$methods), paste('Other')))
+drop_na(dat6, methodsimp) %>% ggplot(aes(fct_infreq(methodsimp)))+
+  geom_bar(fill = c("#000000", "#E69F00", "#56B4E9", "#009E73"))+
+  xlab('Method')+
+  ylab('Number of Participants')+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic()
+```
+
+##Please provide a published reference or a short description of your sequencing approach.
+
+```{r}
+knitr::kable(drop_na(dplyr::select(eDNA, reference, methref)))
+```
+
+
+##Do you believe that there is a need for a statewide eDNA workgroup?
+
+```{r}
+ggplot(eDNA, aes(fct_infreq(workgroup)))+
+  geom_bar(fill = c("#009E73", "#F0E442", "#D55E00"))+
+  xlab('')+
+  ylab('Number of Participants')+
+  scale_y_continuous(expand = c(0,0)) +
+  theme_classic()
+```
+
+##If you answered "yes", what do you believe are the major issues facing the eDNA field today? 
+
+```{r}
+knitr::kable(drop_na(dplyr::select(eDNA, issues)))
+```
+

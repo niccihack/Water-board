@@ -24,12 +24,17 @@ packages <- c('readxl',
               'ggplot2',
               'nortest',
               'broom',
-              'lme4')
+              'lme4',
+              'magrittr')
 lapply(packages, require, character.only = T)
 
 #load data
-recfin = read_csv("C:/Users/NHack/Downloads/CTE001-California-2015-2017.csv")
+recfin = read_csv("C:/Users/NHack/Water-board.git/CTE001-California-2015-2017.csv")
 ```
+
+
+Data taken from the RecFIN website on April 9, 2018. Data includes catch estimates for recreational finfishermen from 2015-2017.
+
 
 Summary table
 
@@ -37,13 +42,15 @@ Summary table
 sumdat = dplyr::group_by(recfin,RECFIN_WATER_AREA_NAME)%>% dplyr::summarise(n=n())
 knitr::kable(sumdat, caption="Total number of records by mode and area")
 ```
+
 ---
+
 New Table 3 - Ranks of species by region
 
 ```{r}
 norcal = dplyr::filter(recfin, RECFIN_SUBREGION_NAME == 'Northern California') %>% 
   dplyr::group_by(RECFIN_WATER_AREA_NAME, SPECIES) %>%
-  dplyr::summarise('count' = sum(SUM_RETAINED_NUM), 'mass' = sum(SUM_RETAINED_MT))%>%
+  dplyr::summarise('count' = round(sum(SUM_RETAINED_NUM)), 'mass' = round(sum(SUM_RETAINED_MT),digits=2))%>%
   dplyr::arrange(RECFIN_WATER_AREA_NAME,desc(count)) %>% #sort my decreasing count
   dplyr::mutate(rank_count = 1:length(RECFIN_WATER_AREA_NAME))%>% #add rank numbers
   dplyr::arrange(RECFIN_WATER_AREA_NAME,desc(mass)) %>% #sort my decreasing mass
@@ -53,10 +60,11 @@ norcal = dplyr::filter(recfin, RECFIN_SUBREGION_NAME == 'Northern California') %
   dplyr::top_n(12, desc(avg_rank))
 
 knitr::kable(norcal, caption = "Northern California")
+write.table(norcal, file="Table3_NorthernCA.txt", sep=',')
 
 socal = dplyr::filter(recfin, RECFIN_SUBREGION_NAME == 'Southern California') %>%
   dplyr::group_by(RECFIN_WATER_AREA_NAME, SPECIES) %>%
-  dplyr::summarise('count' = sum(SUM_RETAINED_NUM), 'mass' = sum(SUM_RETAINED_MT))%>%
+  dplyr::summarise('count' = round(sum(SUM_RETAINED_NUM)), 'mass' = round(sum(SUM_RETAINED_MT),digits=2))%>%
   dplyr::arrange(RECFIN_WATER_AREA_NAME,desc(count)) %>% #sort my decreasing count
   dplyr::mutate(rank_count = 1:length(RECFIN_WATER_AREA_NAME))%>% #add rank numbers
   dplyr::arrange(RECFIN_WATER_AREA_NAME,desc(mass)) %>% #sort my decreasing mass
@@ -68,12 +76,14 @@ socal = dplyr::filter(recfin, RECFIN_SUBREGION_NAME == 'Southern California') %>
 knitr::kable(socal, caption = "Southern California")
 ```
 
+---
+
 Grouped species
 
 ```{r}
 #Create new column of grouped species
 recshort=recfin %>% 
-  dplyr::mutate(genus = 
+  dplyr::mutate(group = 
     case_when(
       grepl('Rockfish|Cowcod|Bocaccio|Chilipepper',SPECIES, ignore.case = T) ~'Rockfish spp.',
     grepl('perch',SPECIES,ignore.case = T)~'Perch spp.',
@@ -81,10 +91,23 @@ recshort=recfin %>%
     grepl('Ray|Shark|Skate|Smoothhound|Guitarfish|Ratfish',SPECIES,ignore.case=T)~'Sharks, skates & rays',
     TRUE~SPECIES))
 
-knitr::kable(recshort, caption = "Species groups")
+sumshort = recshort %>%
+  dplyr::group_by(RECFIN_WATER_AREA_NAME, group) %>%
+  dplyr::summarise('count' = round(sum(SUM_RETAINED_NUM)), 'mass' = round(sum(SUM_RETAINED_MT), digits=2))%>%
+  dplyr::arrange(RECFIN_WATER_AREA_NAME,desc(count))%>%  #sort my decreasing count
+  dplyr::mutate(rank_count = 1:length(RECFIN_WATER_AREA_NAME))%>%
+  dplyr::arrange(RECFIN_WATER_AREA_NAME,desc(mass)) %>% #sort my decreasing mass
+  dplyr::mutate(rank_mass = 1:length(RECFIN_WATER_AREA_NAME)) %>%
+  dplyr::mutate(avg_rank = ((rank_count+rank_mass)/2)) %>%
+  dplyr::arrange(RECFIN_WATER_AREA_NAME,avg_rank) %>%
+  dplyr::top_n(12, desc(avg_rank))
+
+knitr::kable(sumshort, caption = "Species groups")
 ```
 
+
 ---
+
 New Table 4 Summary of catch by species
 
 ```{r}
