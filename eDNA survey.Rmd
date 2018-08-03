@@ -41,8 +41,42 @@ names(eDNA) = c('Timestamp','email','name','sites','substrate','reference','orga
 #separate each site
 dat1 = splitstackshape::cSplit(eDNA, 'sites', direction = 'long', drop = F)
 dat1$sites = as.character(dat1$sites)
+
 #need to find gps coordinates of all the sites 
-dat2 = ggmap::mutate_geocode(dat1, sites)
+eDNA_gps1 <- read_csv("C:/Users/NHack/Water-board.git/eDNA_gps1.csv")
+dat2 = ggmap::mutate_geocode(eDNA_gps1, sites)
+
+#Confert UTMs to GPS
+eDNA_UTMs <- read_excel("~/eDNA/eDNA_UTMs.xlsx")
+eDNA_UTMs$Easting<-as.numeric(substr(eDNA_UTMs$Easting,1,nchar(eDNA_UTMs$Easting)-1))
+names(eDNA_UTMs)[5] = 'sites'
+
+#split by zone
+zone10s = dplyr::filter(eDNA_UTMs, Zone == '10S')
+zone10t = dplyr::filter(eDNA_UTMs, Zone == '10T')
+#https://stackoverflow.com/questions/30018098/how-to-convert-utm-coordinates-to-lat-and-long-in-r
+library(rgdal)
+sputm <- SpatialPoints(zone10s[3:4], proj4string=CRS("+proj=utm +zone=10S +datum=WGS84"))  
+spgeo <- as.data.frame(spTransform(sputm, CRS("+proj=longlat +datum=WGS84")))
+names(spgeo) = c('lon', 'lat')
+geo_10s = dplyr::bind_cols(zone10s, spgeo)
+
+sputmt <- SpatialPoints(zone10t[3:4], proj4string=CRS("+proj=utm +zone=10T +datum=WGS84"))  
+spgeot <- as.data.frame(spTransform(sputmt, CRS("+proj=longlat +datum=WGS84")))
+names(spgeot) = c('lon', 'lat')
+geo_10t = dplyr::bind_cols(zone10t, spgeot)
+
+#combine 2 zones
+KenRoby_sites = rbind(geo_10s, geo_10t)
+
+#Adding those who supplied proper coordinates
+eDNA_coords <- read_excel("C:/Users/NHack/Water-board.git/eDNA_GPS.xlsx")
+#Removing location by merging location and site
+coord_sites = eDNA_coords %>% dplyr::mutate(sites = ifelse(!is.na(sites),paste(Location, sites, sep = ' '), NA))
+#select only relevant columns
+coord_sites = dplyr::select(coord_sites, name, sites, lat, lon)
+
+#Combine all datasets together
 
 ```
 
