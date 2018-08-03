@@ -41,16 +41,31 @@ names(eDNA) = c('Timestamp','email','name','sites','substrate','reference','orga
 #separate each site
 dat1 = splitstackshape::cSplit(eDNA, 'sites', direction = 'long', drop = F)
 dat1$sites = as.character(dat1$sites)
+```
 
+```{r Get GPS data}
 #need to find gps coordinates of all the sites 
 eDNA_gps1 <- read_csv("C:/Users/NHack/Water-board.git/eDNA_gps1.csv")
-dat2 = ggmap::mutate_geocode(eDNA_gps1, sites)
+#add 'california' to geocodes to ensure correct look-up
+geo_dat = eDNA_gps1 %>% dplyr::mutate(sites = ifelse(!is.na(sites), paste(sites, 'California'), sites))
+#remove duplicates of the word california
+geo_dat$sites = gsub('California California', 'California', geo_dat$sites, fixed = T)
+#geocode cannot handle NAs so replacing with question marks
+geo_dat = geo_dat %>% dplyr::mutate(sites = ifelse(is.na(sites),'?',sites))
+geocoded_dat = ggmap::mutate_geocode(geo_dat, sites, override_limit=T)
+
+#times out possibly due to too many searches per second
+#particitioning following https://stackoverflow.com/questions/31637181/how-to-parallelelize-do-calls-with-dplyr/33712365#33712365
+#library(multidplyr)
+#eDNA_gps1$split = 1:3
+#test = eDNA_gps1 %>% dplyr::select(sites, split) %>%
+  #partition(split)%>% ggmap::mutate_geocode(as.data.frame(test), as.character(test$sites), override_limit=T) %>%
+  #collect()
 
 #Confert UTMs to GPS
 eDNA_UTMs <- read_excel("~/eDNA/eDNA_UTMs.xlsx")
 eDNA_UTMs$Easting<-as.numeric(substr(eDNA_UTMs$Easting,1,nchar(eDNA_UTMs$Easting)-1))
 names(eDNA_UTMs)[5] = 'sites'
-
 #split by zone
 zone10s = dplyr::filter(eDNA_UTMs, Zone == '10S')
 zone10t = dplyr::filter(eDNA_UTMs, Zone == '10T')
@@ -60,14 +75,13 @@ sputm <- SpatialPoints(zone10s[3:4], proj4string=CRS("+proj=utm +zone=10S +datum
 spgeo <- as.data.frame(spTransform(sputm, CRS("+proj=longlat +datum=WGS84")))
 names(spgeo) = c('lon', 'lat')
 geo_10s = dplyr::bind_cols(zone10s, spgeo)
-
+#now second zone
 sputmt <- SpatialPoints(zone10t[3:4], proj4string=CRS("+proj=utm +zone=10T +datum=WGS84"))  
 spgeot <- as.data.frame(spTransform(sputmt, CRS("+proj=longlat +datum=WGS84")))
 names(spgeot) = c('lon', 'lat')
 geo_10t = dplyr::bind_cols(zone10t, spgeot)
-
 #combine 2 zones
-KenRoby_sites = rbind(geo_10s, geo_10t)
+KenRoby_sites = rbind(geo_10s, geo_10t) %>% dplyr::select(name, sites, lat, lon)
 
 #Adding those who supplied proper coordinates
 eDNA_coords <- read_excel("C:/Users/NHack/Water-board.git/eDNA_GPS.xlsx")
@@ -77,7 +91,13 @@ coord_sites = eDNA_coords %>% dplyr::mutate(sites = ifelse(!is.na(sites),paste(L
 coord_sites = dplyr::select(coord_sites, name, sites, lat, lon)
 
 #Combine all datasets together
+eDNA_full_coords = rbind(coord_sites, KenRoby_sites, geocoded_dat[-3])
+```
 
+##Map of eDNA sample locations in California
+
+```{r Map}
+#make shiny map
 ```
 
 Making graphs of multiple choice data
