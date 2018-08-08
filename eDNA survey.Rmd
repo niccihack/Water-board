@@ -2,11 +2,8 @@
 title: "eDNA survey"
 author: "Nicole Hack"
 date: '`r format(Sys.Date(), "%B %d, %Y")`'
-output:
-  word_document: default
-  html_notenook: default
-  pdf_document: default
-  html_document: default
+output: html_document
+runtime: shiny 
 ---
 
 
@@ -92,12 +89,50 @@ coord_sites = dplyr::select(coord_sites, name, sites, lat, lon)
 
 #Combine all datasets together
 eDNA_full_coords = rbind(coord_sites, KenRoby_sites, geocoded_dat[-3])
+map_coords = dplyr::filter(eDNA_full_coords, !is.na(eDNA_full_coords$lon))
 ```
 
 ##Map of eDNA sample locations in California
 
 ```{r Map}
 #make shiny map
+library(shiny)
+library(leaflet)
+mapper = function(data) {
+  require(shiny)
+  require(leaflet)
+  shinyApp(
+  
+  ui = column(width = 12, tags$style(type = "text/css","#map {height: calc(100vh - 90px) !important;}"),
+  leafletOutput('map')),
+  
+  server = function(input,output) {
+    output$map <- renderLeaflet({
+    leaflet(options = leafletOptions(minZoom = 6)) %>% 
+      addProviderTiles(providers$CartoDB.Positron) %>%
+      setView(lng = mean(data$lon), 
+              lat = mean(data$lat), 
+              zoom = 6) %>%
+      setMaxBounds(lng1 = -130.3933357,
+                   lat1 = 43.108951,
+                   lng2 = -109.729128,
+                   lat2 = 32.144795)
+  })
+    observe({
+    leafletProxy('map') %>%
+      clearShapes() %>%
+      addCircles(data = data, #Cannot use addcirclemarkers as popup info does not work
+                 lat = ~lat,
+                 lng = ~lon,
+                 opacity = 1,
+                 radius = 5)
+    })
+  }#closes server
+  )#closes shinyApp
+}#closes function
+
+ggmap::get_map("California", scale = 2, zoom = 6, maptype = 'roadmap') %>% ggmap()+
+  geom_point(data = map_coords, aes(x = lon, y = lat), size = 2)
 ```
 
 Making graphs of multiple choice data
@@ -111,13 +146,13 @@ dat3 = splitstackshape::cSplit(eDNA, 'substrate', direction = 'long', sep = ';')
 dat4 = dplyr::mutate(dat3, substratesimp = ifelse((dat3$substrate == 'Water' |
                                                     dat3$substrate == 'Soil' |
                                                     dat3$substrate == 'Sediment'),
-                     dat3$substrate, paste('Other')))
+                     as.character(dat3$substrate), paste('Other')))
 ggplot(dat4, aes(fct_infreq(substratesimp)))+
   geom_bar(fill = c('dodgerblue','chocolate4','tan','grey'))+
   xlab('Substrate')+
   ylab('Number of Participants')+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic()
+  theme_classic(base_size = 27)
 ```
 
 ##Please provide detail on your target organisms.
@@ -148,7 +183,8 @@ drop_na(dat8, group) %>% ggplot(aes(fct_infreq(group)))+
   xlab('Organism')+
   ylab('Number of Participants')+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic()
+  theme_classic(base_size = 27)+
+  theme(plot.title = element_text(hjust = 0.5),axis.text.x = element_text(angle = 45, hjust = 1))
 
 #make new column of invertebrate/vertebrate/both
 dat9 = dat8 %>% dplyr::mutate(vert = case_when(
@@ -169,7 +205,7 @@ drop_na(dat10, vert) %>% ggplot(aes(fct_infreq(vert)))+
   xlab('Organism')+
   ylab('Number of Participants')+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic()
+  theme_classic(base_size = 27)
 ```
 
 
@@ -188,7 +224,7 @@ drop_na(dat6, methodsimp) %>% ggplot(aes(fct_infreq(methodsimp)))+
   xlab('Method')+
   ylab('Number of Participants')+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic()
+  theme_classic(base_size = 27)
 ```
 
 ##Please provide a published reference or a short description of your sequencing approach.
@@ -206,7 +242,7 @@ ggplot(eDNA, aes(fct_infreq(workgroup)))+
   xlab('')+
   ylab('Number of Participants')+
   scale_y_continuous(expand = c(0,0)) +
-  theme_classic()
+  theme_classic(base_size = 27)
 ```
 
 ##If you answered "yes", what do you believe are the major issues facing the eDNA field today? 
