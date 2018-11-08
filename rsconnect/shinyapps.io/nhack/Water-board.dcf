@@ -1,0 +1,13 @@
+name: Water-board
+title: Water-board
+username:
+account: nhack
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 309066
+bundleId: 1438643
+url: https://nhack.shinyapps.io/water-board/
+when: 1529474510.39884
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: BOG-RecFIN.Rmd|SWRCB_web_internalsurvey.Rmd|www/dead_fish.jpg|www/hab1.jpg|WaterBoard

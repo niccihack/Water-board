@@ -1,0 +1,10 @@
+name: waterboard
+title:
+username:
+account: nhack
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 363607
+bundleId: 1438633
+url: https://nhack.shinyapps.io/waterboard/
+when: 1529474182.22606
