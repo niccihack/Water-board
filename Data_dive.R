@@ -40,25 +40,67 @@ Station_Allocation <- read_excel("~/Trash/Disposal Data.xlsx", sheet = 11)[,1:11
 write.csv(Station_Allocation, file = "Station_Allocation.csv")
 
 ####Questions####
-trashers = read_csv("C:/Users/NHack/Downloads/Questions for trash experts (Responses) - Form Responses 1.csv")
-names(trashers) = c('time', 'name', 'gender', 'job', 'company', 'role','expertise','data', 'upload', 'participation')
-trashers = trashers[,c(2:8,10)]
+eventbrite <- read_csv("C:/Users/NHack/Downloads/report-2018-11-15T1043.csv")
+names(eventbrite) = c('order','First_Name','Last_Name','email','tic_type','gender','role','role_other','expertise','data','upload','participation','rate','programming','statistics','ML','wrangling','viz_com','db_manag','software','intuition','pub_policy','big_data','GIS','trash','job','company')
+eventbrite = eventbrite[,c(2:5,26,27,6:25)]
 
+#Trash Experts#
+trashers = read_csv("C:/Users/NHack/Downloads/Questions for trash experts (Responses) - Form Responses 1.csv")
+names(trashers) = c('time', 'name', 'gender', 'job', 'company', 'roles','expertise','data', 'upload', 'participation')
+trashers = trashers %>% 
+  dplyr::select(c(2:10)) %>%
+  tidyr::separate(name, c("First_Name","Last_Name"), " ", extra = 'merge')
+
+eventbrite_trash = eventbrite %>% 
+  dplyr::filter(tic_type == 'Participant - Trash Expert') %>% 
+  dplyr::filter(!is.na(company) | !is.na(gender)) %>% 
+  dplyr::select(1:13)
+clean_eb_trash = eventbrite_trash %>% 
+  dplyr::mutate(roles = ifelse(role == 'Other', role_other, role)) %>%
+  dplyr::select(1:7,14,10:13)
+
+merged_trash = dplyr::bind_rows(trashers, clean_eb_trash)
+#Replace NAs in email and tic_type with eventbrite info
+final_trash = left_join(dplyr::select(merged_trash, 1:10), eventbrite[1:4], by = c('First_Name','Last_Name'))
+final_trash = final_trash[!duplicated(final_trash),]
+write.csv(final_trash, file = "DataDive_TrashExperts_questions20181108.csv")
+
+
+#Data Scientist#
 nerds = read_csv("C:/Users/NHack/Downloads/Questions for Data Scientists (Responses) - Form Responses 1.csv")
 names(nerds) = c('time','name','gender','job','company','programming','statistics','wrangling','viz_com','db_manag','software','GIS','ML','intuition','pub_policy','big_data','participation','trash')
-merged = dplyr::bind_rows(trashers, nerds[,2:18]) 
-merged = tidyr::separate(merged, name, c("First_Name","Last_Name"), " ")
+nerds = nerds[,2:18]
+nerds = tidyr::separate(nerds, name, c("First_Name","Last_Name"), " ", extra = 'merge')
 
-eventbrite <- read_csv("C:/Users/NHack/Downloads/report-2018-11-05T1644.csv")
-names(eventbrite) = c('order','First_Name','Last_Name','email','tic_type','group','gender','role','role_other','expertise','data','upload','participation','rate','programming','statistics','ML','wrangling','viz_com','db_manag','software','intuition','pub_policy','big_data','GIS','trash','job','company')
-eventbrite = eventbrite[,c(2:5,27,28,7:26)]
-questions = eventbrite %>% dplyr::filter(!is.na(job))
-check = eventbrite %>% dplyr::filter(is.na(job))
-final = dplyr::union(eventbrite, merged)
-#need to replace NAs in eventbrite with answers from merged by name
-#use dplyr::coalesce or dplyr::case_when() 
+eventbrite_data = eventbrite %>% 
+  dplyr::filter(tic_type == 'Participant - Data Scientist') %>% 
+  dplyr::filter(!is.na(company) | !is.na(gender)) %>% 
+  dplyr::select(1:7,11:26)
 
-final = dplyr::bind_rows(merged, eventbrite)
-trash_final = dplyr::filter(final, tic_type == 'Participant - Trash Expert')
-dups = final[duplicated(final$Last_Name),]
-#need to merge question responses and tix type
+merged_data = dplyr::bind_rows(nerds, eventbrite_data)
+#Replace NAs in email and tic_type with eventbrite info
+final_data = left_join(dplyr::select(merged_data, 1:18), eventbrite[1:4], by = c('First_Name','Last_Name'))
+final_data = final_data[!duplicated(final_data),]
+write.csv(final_data, file = "DataDive_DataScientist_questions20181108.csv")
+
+
+##Lunch##
+lunch <- read_csv("C:/Users/NHack/Downloads/2018 CA Trash Data Dive attendance (Responses) - Form Responses 1.csv")
+name_tags = left_join(lunch, eventbrite[,c(1,2,4)], by = c('First_Name','Last_Name')) %>%
+  dplyr::select(First_Name, Last_Name, tic_type) %>%
+  dplyr::distinct(Last_Name, First_Name, .keep_all = T) %>%
+  dplyr::filter(!is.na(Last_Name))
+sum_tags = name_tags %>% group_by(tic_type) %>%
+  dplyr::summarise(tixs = n())
+write.csv(name_tags, file = 'DataDive_nametags.csv')
+
+lunch = lunch %>% tidyr::separate(Name, c("First_Name","Last_Name"), " ", extra = 'merge')
+trash_lunch = left_join(final_trash, lunch, by = c('First_Name','Last_Name')) %>% 
+  dplyr::filter(!is.na(Timestamp)) %>% 
+  dplyr::distinct(Last_Name, First_Name, .keep_all = T)
+nerds_lunch = left_join(final_data, lunch, by = c('First_Name','Last_Name')) %>% 
+  dplyr::filter(!is.na(Timestamp)) %>% 
+  dplyr::distinct(Last_Name, First_Name, .keep_all = T)
+merged_lunch = dplyr::bind_rows(dplyr::select(trash_lunch, Last_Name, First_Name, email, tic_type), dplyr::select(nerds_lunch, Last_Name, First_Name, email, tic_type))
+write.csv(merged_lunch, file = 'DataDive_completed.csv')
+
